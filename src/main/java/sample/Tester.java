@@ -5,14 +5,11 @@ import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Line;
-import javafx.scene.shape.Path;
 import javafx.stage.Stage;
 
 import java.util.Random;
 
-public class Main extends Application {
+public class Tester extends Application {
 
     private static Random rand;
 
