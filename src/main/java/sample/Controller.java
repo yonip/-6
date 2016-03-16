@@ -7,11 +7,16 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.Slider;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
+
+import javax.swing.*;
 
 public class Controller {
     @FXML
@@ -43,6 +48,17 @@ public class Controller {
     @FXML
     private ProgressBar soundprog;
 
+    private ImageView playDefault;
+    private ImageView playPressed;
+    private ImageView pauseDefault;
+    private ImageView pausePressed;
+    private ImageView repeatDefault;
+    private ImageView repeatPressed;
+    private ImageView skipbackDefault;
+    private ImageView skipbackPressed;
+    private ImageView skipforwardDefault;
+    private ImageView skipforwardPressed;
+
     private boolean playing;
     Media media;
     MediaPlayer player;
@@ -53,6 +69,22 @@ public class Controller {
      */
     @FXML
     public void initialize() {
+        playPause.setText("");
+        skip.setText("");
+        rewind.setText("");
+        playDefault = new ImageView(new Image(getClass().getResourceAsStream("/images/button/play_default.png")));
+        playPressed = new ImageView(new Image(getClass().getResourceAsStream("/images/button/play_pressed.png")));
+        pauseDefault = new ImageView(new Image(getClass().getResourceAsStream("/images/button/pause_default.png")));
+        pausePressed = new ImageView(new Image(getClass().getResourceAsStream("/images/button/pause_pressed.png")));
+        repeatDefault = new ImageView(new Image(getClass().getResourceAsStream("/images/button/repeat_default.png")));
+        repeatPressed = new ImageView(new Image(getClass().getResourceAsStream("/images/button/repeat_pressed.png")));
+        skipbackDefault = new ImageView(new Image(getClass().getResourceAsStream("/images/button/skipback_default.png")));
+        skipbackPressed = new ImageView(new Image(getClass().getResourceAsStream("/images/button/skipback_pressed.png")));
+        skipforwardDefault = new ImageView(new Image(getClass().getResourceAsStream("/images/button/skipforward_default.png")));
+        skipforwardPressed = new ImageView(new Image(getClass().getResourceAsStream("/images/button/skipforward_pressed.png")));
+        playPause.setGraphic(playDefault);
+        skip.setGraphic(skipforwardDefault);
+        rewind.setGraphic(skipbackDefault);
         media = new Media(getClass().getResource("/music/Billy Boyd - The Last Goodbye.mp3").toString());
         String file = media.getSource().replace("%20", " ");
         String name = file.substring(file.lastIndexOf("/") + 1, file.lastIndexOf(".mp3"));
@@ -92,7 +124,7 @@ public class Controller {
             soundvol.setMax(1);
             soundvol.setValue(0);
 
-            play();
+            pause();
 
             System.out.println("ready");
         });
@@ -108,33 +140,54 @@ public class Controller {
     }
 
     @FXML
-    private void playPause(ActionEvent event) {
+    private void playPausePressed(MouseEvent event) {
         if (playing) {
+            playPause.setGraphic(pausePressed);
             pause();
         } else {
+            playPause.setGraphic(playPressed);
             play();
         }
     }
 
     @FXML
-    private void rewind(ActionEvent event) {
+    private void playPauseReleased(MouseEvent event) {
+        if (playing) {
+            playPause.setGraphic(pauseDefault);
+        } else {
+            playPause.setGraphic(playDefault);
+        }
+    }
+
+    @FXML
+    private void rewindPressed(MouseEvent event) {
+        rewind.setGraphic(skipbackPressed);
         player.seek(player.getStartTime());
     }
 
     @FXML
-    private void skip(ActionEvent event) {
+    private void rewindReleased(MouseEvent event) {
+        rewind.setGraphic(skipbackDefault);
+    }
+
+    @FXML
+    private void skipPressed(MouseEvent event) {
+        skip.setGraphic(skipforwardPressed);
         player.seek(player.getStopTime());
+    }
+
+    @FXML
+    private void skipReleased(MouseEvent event) {
+        skip.setGraphic(skipforwardDefault);
     }
 
     private void play() {
         this.playing = true;
-        this.playPause.setText("||");
         this.player.play();
     }
 
     private void pause() {
         this.playing = false;
-        this.playPause.setText(">");
         this.player.pause();
     }
 }
