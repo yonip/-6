@@ -1,6 +1,8 @@
 package sample;
 
 import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.fxml.JavaFXBuilderFactory;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -12,19 +14,14 @@ import java.util.Random;
 public class Tester extends Application {
 
     private static Random rand;
+    private static FXMLLoader fxmlLoader;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
-        primaryStage.setTitle("Drawing Operations Test");
-        Group root = new Group();
-        Canvas canvas = new Canvas(720, 480);
-        GraphicsContext gc = canvas.getGraphicsContext2D();
-        rand = new Random(200);
-        //drawPoints(gc);
-        drawLines(gc);
-        root.getChildren().add(canvas);
-        primaryStage.setScene(new Scene(root));
+        fxmlLoader = new FXMLLoader(getClass().getResource("/fxml/test.fxml"), null, new JavaFXBuilderFactory(), null);
+        primaryStage.setScene(new Scene(fxmlLoader.load()));
         primaryStage.show();
+
     }
 
     private void drawLines(GraphicsContext gc) {
@@ -166,6 +163,9 @@ public class Tester extends Application {
         }
     }
 
+    public void stop() {
+        ((TestController) fxmlLoader.getController()).stop();
+    }
 
     public static void main(String[] args) {
         launch(args);
