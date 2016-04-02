@@ -1,8 +1,11 @@
 package sample;
 
-import javafx.event.ActionEvent;
+import ddf.minim.AudioPlayer;
+import ddf.minim.Minim;
+import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressBar;
@@ -10,19 +13,19 @@ import javafx.scene.control.Slider;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
-import javafx.util.Duration;
 
-import javax.swing.*;
+import java.io.InputStream;
 
 public class Controller {
     @FXML
     private VBox information;
 
     @FXML
+    private Pane canvasHolder;
     private Canvas canvas;
     @FXML
     private ListView list;
@@ -60,8 +63,13 @@ public class Controller {
     private ImageView skipforwardPressed;
 
     private boolean playing;
-    Media media;
-    MediaPlayer player;
+    private Minim minim;
+    private AudioPlayer player;
+    private AnimationTimer timer;
+
+    public static final int SECOND = 1000;
+    public static final int MINUTE = 60 * SECOND;
+    public static final int HOUR = 60 * MINUTE;
 
     /**
      * Called to initialize a controller after its root element has been
@@ -69,6 +77,13 @@ public class Controller {
      */
     @FXML
     public void initialize() {
+        //canvas = new ResizableCanvas();
+        //canvas.setWidth(canvasHolder.getWidth());
+        //canvas.setHeight(canvasHolder.getHeight());
+        System.out.println(canvasHolder.getHeight() + " " + canvasHolder.getWidth());
+        //canvasHolder.getChildren().add(canvas);
+        canvas = (Canvas)canvasHolder.getChildren().get(0);
+        System.out.println(canvas.getHeight() + " " + canvas.getWidth());
         playPause.setText("");
         skip.setText("");
         rewind.setText("");
@@ -82,58 +97,89 @@ public class Controller {
         skipbackPressed = new ImageView(new Image(getClass().getResourceAsStream("/images/button/skipback_pressed.png")));
         skipforwardDefault = new ImageView(new Image(getClass().getResourceAsStream("/images/button/skipforward_default.png")));
         skipforwardPressed = new ImageView(new Image(getClass().getResourceAsStream("/images/button/skipforward_pressed.png")));
-        playPause.setGraphic(playDefault);
-        skip.setGraphic(skipforwardDefault);
-        rewind.setGraphic(skipbackDefault);
-        media = new Media(getClass().getResource("/music/Billy Boyd - The Last Goodbye.mp3").toString());
-        String file = media.getSource().replace("%20", " ");
+        setButtonGraphic(playPause, playDefault);
+        setButtonGraphic(skip, skipforwardDefault);
+        setButtonGraphic(rewind, skipbackDefault);
+
+        //media = new Media(getClass().getResource("/music/Billy Boyd - The Last Goodbye.mp3").toString());
+        String file = "/music/Billy Boyd - The Last Goodbye.mp3";
         String name = file.substring(file.lastIndexOf("/") + 1, file.lastIndexOf(".mp3"));
         String artist = name.substring(0,name.indexOf("-")).trim();
         String song = name.substring(name.indexOf("-")+1).trim();
         songName.setText("Artist: " + artist + "\nSong: " + song);
-        player = new MediaPlayer(media);
-        player.totalDurationProperty().addListener((ov, oldValue, newValue) -> songtime.setMax(newValue.toSeconds()));
-        player.setOnReady(() -> {
-            player.currentTimeProperty().addListener((observable, oldValue, newValue) -> {
-                time.setText(timeToText(newValue) + "/" + timeToText(player.getStopTime()));
-                if (!songtime.isValueChanging()) {
-                    songtime.setValue(newValue.toSeconds());
-                }
-            });
-            songtime.valueChangingProperty().addListener((ov, wasChanging, isChanging) -> {
-                if (!isChanging) {
-                    player.seek(Duration.seconds(songtime.getValue()));
-                }
-            });
-            songtime.valueProperty().addListener((ov, oldVal, newVal) -> {
-                progress.setProgress(newVal.doubleValue() / songtime.getMax());
-                if (!songtime.isValueChanging()) {
-                    double currentTime = player.getCurrentTime().toSeconds();
-                    if (Math.abs(currentTime - newVal.doubleValue()) > 0.5) {
-                        player.seek(Duration.seconds(newVal.doubleValue()));
-                    }
-                }
-            });
-            songtime.setMax(media.getDuration().toSeconds());
-            songtime.setValue(0);
 
-            soundvol.valueProperty().addListener((observable, oldValue, newValue) -> {
-                soundprog.setProgress(newValue.doubleValue() / soundvol.getMax());
-                player.setVolume(newValue.doubleValue());
-            });
-            soundvol.setMax(1);
-            soundvol.setValue(0);
+        minim = new Minim(this);
+        player = minim.loadFile(file);
+        timer = new AnimationTimer() {
+            GraphicsContext gc;
+            double width;
+            double height;
 
-            pause();
-
-            System.out.println("ready");
+            @Override
+            public void handle(long now) {
+                // make sure sliders and text are updated
+                songtime.setValue(player.position());
+                time.setText(timeToText(player.position()));
+                // now to drawing things
+                gc = canvas.getGraphicsContext2D();
+                width = canvas.getWidth();
+                height = canvas.getHeight();
+                gc.setStroke(Color.BLACK);
+                gc.setFill(Color.gray(1));
+                gc.fillRect(0, 0, width, height);
+                gc.setFill(Color.gray(0.2));
+                gc.fillRect(0, 0, width * (player.position() / (double) (player.length())), 2);
+                gc.beginPath();
+                //gc.fill();
+                gc.moveTo(0, height/2);
+                for(int i = 0; i < player.bufferSize(); i++)
+                {
+                    double left = height/2 + player.left.get(i) * height/2;
+                    //System.out.print(left + " ");
+                    gc.lineTo(width * ((double)i)/player.bufferSize(), left);
+                }
+                //System.out.println();
+                //gc.closePath();
+                gc.stroke();
+            }
+        };
+        songtime.setMax(player.length());
+        songtime.setValue(0);
+        songtime.valueChangingProperty().addListener((ov, wasChanging, isChanging) -> {
+            if (!isChanging) {
+                player.cue((int) (songtime.getValue()));
+            }
         });
+        songtime.valueProperty().addListener((ov, oldVal, newVal) -> {
+            progress.setProgress(newVal.doubleValue() / songtime.getMax());
+            if (!songtime.isValueChanging()) {
+                double currentTime = player.position();
+                if (Math.abs(currentTime - newVal.doubleValue()) > 0.5) {
+                    player.cue((int) newVal.doubleValue());
+                }
+            }
+        });
+        soundvol.valueProperty().addListener((observable, oldValue, newValue) -> {
+            soundprog.setProgress((newValue.doubleValue()-soundvol.getMin()) / (soundvol.getMax()-soundvol.getMin()));
+            player.setGain((float) newValue.doubleValue());
+        });
+        soundvol.setMax(14);
+        soundvol.setMin(-80);
+        soundvol.setValue(0);
+        timer.start();
+        player.pause();
     }
 
-    private static String timeToText(Duration time) {
-        int hrs = (int) (time.toHours());
-        int min = (int) (time.toMinutes()) % 60;
-        int sec = (int) (time.toSeconds()) % 60;
+    private static void setButtonGraphic(Button b, ImageView iv) {
+        iv.setFitHeight(26);
+        iv.setFitWidth(26);
+        b.setGraphic(iv);
+    }
+
+    private static String timeToText(int time) {
+        int hrs = time/HOUR;
+        int min = (time/MINUTE) % 60;
+        int sec = (time/SECOND) % 60;
         String t = ((hrs == 0) ? "" : hrs + ":");
         t += ((t.isEmpty() && min < 10) ? "0" : "") + min + ":" + ((sec < 10) ? "0" : "") + sec;
         return t;
@@ -142,10 +188,10 @@ public class Controller {
     @FXML
     private void playPausePressed(MouseEvent event) {
         if (playing) {
-            playPause.setGraphic(pausePressed);
+            setButtonGraphic(playPause, pausePressed);
             pause();
         } else {
-            playPause.setGraphic(playPressed);
+            setButtonGraphic(playPause, playPressed);
             play();
         }
     }
@@ -153,32 +199,32 @@ public class Controller {
     @FXML
     private void playPauseReleased(MouseEvent event) {
         if (playing) {
-            playPause.setGraphic(pauseDefault);
+            setButtonGraphic(playPause, pauseDefault);
         } else {
-            playPause.setGraphic(playDefault);
+            setButtonGraphic(playPause, playDefault);
         }
     }
 
     @FXML
     private void rewindPressed(MouseEvent event) {
-        rewind.setGraphic(skipbackPressed);
-        player.seek(player.getStartTime());
+        setButtonGraphic(rewind, skipbackPressed);
+        player.cue(0);
     }
 
     @FXML
     private void rewindReleased(MouseEvent event) {
-        rewind.setGraphic(skipbackDefault);
+        setButtonGraphic(rewind, skipbackDefault);
     }
 
     @FXML
     private void skipPressed(MouseEvent event) {
-        skip.setGraphic(skipforwardPressed);
-        player.seek(player.getStopTime());
+        setButtonGraphic(skip, skipforwardPressed);
+        player.cue(player.length());
     }
 
     @FXML
     private void skipReleased(MouseEvent event) {
-        skip.setGraphic(skipforwardDefault);
+        setButtonGraphic(skip, skipforwardDefault);
     }
 
     private void play() {
@@ -189,5 +235,14 @@ public class Controller {
     private void pause() {
         this.playing = false;
         this.player.pause();
+    }
+
+    public InputStream createInput(String path) {
+        return getClass().getResourceAsStream(path);
+    }
+
+    public void stop() {
+        player.close();
+        minim.stop();
     }
 }
