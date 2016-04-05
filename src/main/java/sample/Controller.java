@@ -2,6 +2,7 @@ package sample;
 
 import ddf.minim.AudioPlayer;
 import ddf.minim.Minim;
+import ddf.minim.analysis.FFT;
 import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
@@ -64,6 +65,7 @@ public class Controller {
 
     private boolean playing;
     private Minim minim;
+    private FFT fft;
     private AudioPlayer player;
     private AnimationTimer timer;
 
@@ -77,11 +79,7 @@ public class Controller {
      */
     @FXML
     public void initialize() {
-        //canvas = new ResizableCanvas();
-        //canvas.setWidth(canvasHolder.getWidth());
-        //canvas.setHeight(canvasHolder.getHeight());
         System.out.println(canvasHolder.getHeight() + " " + canvasHolder.getWidth());
-        //canvasHolder.getChildren().add(canvas);
         canvas = (Canvas)canvasHolder.getChildren().get(0);
         System.out.println(canvas.getHeight() + " " + canvas.getWidth());
         playPause.setText("");
@@ -110,10 +108,15 @@ public class Controller {
 
         minim = new Minim(this);
         player = minim.loadFile(file);
+        fft = new FFT(player.bufferSize(), player.sampleRate());
         timer = new AnimationTimer() {
             GraphicsContext gc;
             double width;
             double height;
+            double left;
+            double right;
+            double band;
+            int ln = 75;
 
             @Override
             public void handle(long now) {
@@ -128,23 +131,32 @@ public class Controller {
                 gc.setFill(Color.gray(1));
                 gc.fillRect(0, 0, width, height);
                 gc.setFill(Color.gray(0.2));
-                gc.fillRect(0, 0, width * (player.position() / (double) (player.length())), 2);
+                gc.fillRect(0, height, width * (player.position() / (double) (player.length())), height - 2);
                 gc.beginPath();
                 //gc.fill();
                 gc.moveTo(0, height/2);
                 for(int i = 0; i < player.bufferSize(); i++)
                 {
-                    double left = height/2 + player.left.get(i) * height/2;
-                    //System.out.print(left + " ");
+                    left = height/2 + player.left.get(i) * height/2;
                     gc.lineTo(width * ((double)i)/player.bufferSize(), left);
+                }
+                gc.moveTo(0, height/2);
+                for(int i = 0; i < player.bufferSize(); i++)
+                {
+                    right = height/2 + player.right.get(i) * height/2;
+                    gc.lineTo(width * ((double)i)/player.bufferSize(), right);
                 }
                 //System.out.println();
                 //gc.closePath();
                 gc.stroke();
+                fft.forward(player.mix);
+                gc.setFill(Color.color(1, 0, 0, 0.5));
+                for(int i = 0; i < ln; i++) {
+                    band = fft.getBand(i);
+                    gc.fillRect(i * (width/ln), 0, (width/ln), band);
+                }
             }
         };
-        songtime.setMax(player.length());
-        songtime.setValue(0);
         songtime.valueChangingProperty().addListener((ov, wasChanging, isChanging) -> {
             if (!isChanging) {
                 player.cue((int) (songtime.getValue()));
@@ -163,6 +175,8 @@ public class Controller {
             soundprog.setProgress((newValue.doubleValue()-soundvol.getMin()) / (soundvol.getMax()-soundvol.getMin()));
             player.setGain((float) newValue.doubleValue());
         });
+        songtime.setMax(player.length());
+        songtime.setValue(0);
         soundvol.setMax(14);
         soundvol.setMin(-80);
         soundvol.setValue(0);
