@@ -18,7 +18,6 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 
-
 import java.io.InputStream;
 
 public class TestController {
@@ -144,8 +143,6 @@ public class TestController {
                 gc.stroke();
             }
         };
-        songtime.setMax(player.length());
-        songtime.setValue(0);
         songtime.valueChangingProperty().addListener((ov, wasChanging, isChanging) -> {
             if (!isChanging) {
                 player.cue((int) (songtime.getValue()));
@@ -164,6 +161,8 @@ public class TestController {
             soundprog.setProgress((newValue.doubleValue()-soundvol.getMin()) / (soundvol.getMax()-soundvol.getMin()));
             player.setGain((float) newValue.doubleValue());
         });
+        songtime.setMax(player.length());
+        songtime.setValue(0);
         soundvol.setMax(14);
         soundvol.setMin(-80);
         soundvol.setValue(0);
