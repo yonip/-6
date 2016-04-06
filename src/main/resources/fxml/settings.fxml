@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.paint.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.image.*?>
+<?import java.lang.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<Pane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.SettingsController">
+   <children>
+      <TabPane tabClosingPolicy="UNAVAILABLE">
+        <tabs>
+          <Tab closable="false" text="general">
+            <content>
+              <AnchorPane maxHeight="1.7976931348623157E308" minWidth="0.0" prefWidth="599.0">
+                     <children>
+                        <Text layoutX="27.0" layoutY="26.0" strokeType="OUTSIDE" strokeWidth="0.0" text="some stuff here" wrappingWidth="573.0" AnchorPane.leftAnchor="9.0" AnchorPane.rightAnchor="9.0" AnchorPane.topAnchor="10.0" />
+                     </children>
+                     <padding>
+                        <Insets left="9.0" />
+                     </padding>
+                  </AnchorPane>
+            </content>
+          </Tab>
+          <Tab closable="false" text="play">
+            <content>
+              <AnchorPane minHeight="0.0" minWidth="0.0" prefWidth="200.0">
+                     <children>
+                        <Text layoutY="26.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Music Directories:" wrappingWidth="599.0" AnchorPane.leftAnchor="9.0" AnchorPane.rightAnchor="9.0" AnchorPane.topAnchor="10.0" />
+                        <TextArea fx:id="musicDir" layoutY="44.0" prefHeight="172.0" prefWidth="547.0" scrollLeft="30.0" AnchorPane.leftAnchor="26.0" AnchorPane.rightAnchor="26.0" AnchorPane.topAnchor="44.0">
+                           <padding>
+                              <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                           </padding>
+                        </TextArea>
+                        <Text fx:id="saved" layoutX="395.0" layoutY="257.0" strokeType="OUTSIDE" strokeWidth="0.0" text="text" />
+                        <Button fx:id="update" layoutX="463.0" layoutY="222.0" mnemonicParsing="false" onMouseClicked="#update" prefHeight="0.0" prefWidth="110.0" text="Update" />
+                        <HBox layoutY="287.0" prefHeight="113.0" prefWidth="599.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+                           <children>
+                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Repeat:" wrappingWidth="176.0" x="9.0">
+                                 <HBox.margin>
+                                    <Insets left="9.0" />
+                                 </HBox.margin>
+                              </Text>
+                              <VBox prefHeight="100.0" prefWidth="454.0">
+                                 <children>
+                                    <RadioButton fx:id="repNone" mnemonicParsing="false" text="None" />
+                                    <RadioButton fx:id="repAll" mnemonicParsing="false" text="All" />
+                                    <RadioButton fx:id="repSel" mnemonicParsing="false" text="Selection???" />
+                                 </children>
+                              </VBox>
+                           </children>
+                        </HBox>
+                     </children>
+                  </AnchorPane>
+            </content>
+          </Tab>
+            <Tab closable="false" text="visualizer">
+              <content>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefWidth="200.0">
+                     <children>
+                        <Text layoutY="26.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Color" wrappingWidth="599.0" AnchorPane.leftAnchor="9.0" AnchorPane.rightAnchor="9.0" AnchorPane.topAnchor="10.0" />
+                        <Slider layoutX="105.0" layoutY="56.0" prefHeight="12.0" prefWidth="389.0" stylesheets="@../stylesheets/settings.css" />
+                     </children>
+                  </AnchorPane>
+              </content>
+            </Tab>
+        </tabs>
+      </TabPane>
+   </children>
+</Pane>
