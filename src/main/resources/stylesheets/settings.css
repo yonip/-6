@@ -1,0 +1,11 @@
+.slider .track {
+    -fx-background-color: 
+        -fx-focus-color,
+        blue,
+        white,
+        linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet);
+}
+.slider .thumb {
+    -fx-padding: 4;
+    -fx-opacity: 1;
+}
