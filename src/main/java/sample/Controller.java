@@ -132,15 +132,33 @@ public class Controller {
                 gc.beginPath();
                 //gc.fill();
                 gc.moveTo(0, height/2);
-                for(int i = 0; i < player.bufferSize(); i++)
+                for(int i = 0; i < player.bufferSize()-100; i++)
                 {
                     double left = height/2 + player.left.get(i) * height/2;
                     //System.out.print(left + " ");
-                    gc.lineTo(width * ((double)i)/player.bufferSize(), left);
+                    //gc.lineTo(width * ((double)i)/player.bufferSize(), left);
+                    if (i%30 ==0){
+                        gc.setFill(Color.GRAY);
+                        gc.fillOval(width * ((double)i)/player.bufferSize()-0.5, left+50, 1,1 );
+                        gc.fillOval(width * ((double)i)/player.bufferSize()-0.5, left-50, 1,1);
+
+                        gc.setFill(Color.LIGHTGRAY);
+                        gc.fillOval(width * ((double)i)/player.bufferSize()-0.5, left+100, 1,1 );
+                        gc.fillOval(width * ((double)i)/player.bufferSize()-0.5, left-100, 1,1 );
+                    }
+                    double left2=0;
+                    for (int m=80;m<101;m=m+16){
+                        left2 = canvas.getHeight()/2 + player.left.get(i+m) * canvas.getHeight()/2;
+                        gc.setStroke(new Color((m%3)/3.0,(m%12)/12.0,0.72,1-m/100.0));
+                        gc.strokeLine(canvas.getWidth()*((double)i)/player.bufferSize(),left, canvas.getWidth()* ((double)(i+m))/player.bufferSize(),left2);
+                    }
                 }
+
+
                 //System.out.println();
                 //gc.closePath();
                 gc.stroke();
+
             }
         };
         songtime.setMax(player.length());
