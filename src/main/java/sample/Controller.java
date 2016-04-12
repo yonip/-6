@@ -116,7 +116,7 @@ public class Controller {
             double left;
             double right;
             double band;
-            int ln = 75;
+            int ln = 40;
 
             @Override
             public void handle(long now) {
@@ -142,6 +142,7 @@ public class Controller {
                     //gc.lineTo(width * ((double)i)/player.bufferSize(), left);
                     if (i%30 ==0){
                         gc.setFill(Color.GRAY);
+
                         gc.fillOval(width * ((double)i)/player.bufferSize()-0.5, left+50, 1,1 );
                         gc.fillOval(width * ((double)i)/player.bufferSize()-0.5, left-50, 1,1);
 
@@ -152,7 +153,7 @@ public class Controller {
                     double left2=0;
                     for (int m=80;m<101;m=m+16){
                         left2 = canvas.getHeight()/2 + player.left.get(i+m) * canvas.getHeight()/2;
-                        gc.setStroke(new Color((m%3)/3.0,(m%12)/12.0,0.72,1-m/100.0));
+                        gc.setStroke(new Color(0.25,(m%12)/12.0,0.72,1-m/100.0));
                         gc.strokeLine(canvas.getWidth()*((double)i)/player.bufferSize(),left, canvas.getWidth()* ((double)(i+m))/player.bufferSize(),left2);
                     }
                 }
@@ -167,9 +168,14 @@ public class Controller {
                 gc.stroke();
                 fft.forward(player.mix);
                 gc.setFill(Color.color(1, 0, 0, 0.5));
+                gc.setFill(Color.DARKBLUE);
                 for(int i = 0; i < ln; i++) {
                     band = fft.getBand(i);
-                    gc.fillRect(i * (width/ln), 0, (width/ln), band);
+                    for (int dots=0;dots<band*1.5;dots=dots + 5){
+                        gc.setFill(new Color((double)(i/ln),0.74,0.9,0.5));
+                        gc.fillOval(i*(width/ln),height-dots,2.5,2.5);
+                    }
+                    //gc.fillRect(i * (width/ln), 0, (width/ln), band);
                 }
             }
         };
