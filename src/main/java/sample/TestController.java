@@ -2,7 +2,6 @@ package sample;
 
 import ddf.minim.AudioPlayer;
 import ddf.minim.Minim;
-import ddf.minim.analysis.FFT;
 import javafx.animation.AnimationTimer;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
@@ -21,7 +20,7 @@ import javafx.scene.text.Text;
 
 import java.io.InputStream;
 
-public class Controller {
+public class TestController {
     @FXML
     private VBox information;
 
@@ -65,7 +64,6 @@ public class Controller {
 
     private boolean playing;
     private Minim minim;
-    private FFT fft;
     private AudioPlayer player;
     private AnimationTimer timer;
 
@@ -79,7 +77,11 @@ public class Controller {
      */
     @FXML
     public void initialize() {
+        //canvas = new ResizableCanvas();
+        //canvas.setWidth(canvasHolder.getWidth());
+        //canvas.setHeight(canvasHolder.getHeight());
         System.out.println(canvasHolder.getHeight() + " " + canvasHolder.getWidth());
+        //canvasHolder.getChildren().add(canvas);
         canvas = (Canvas)canvasHolder.getChildren().get(0);
         System.out.println(canvas.getHeight() + " " + canvas.getWidth());
         playPause.setText("");
@@ -108,15 +110,10 @@ public class Controller {
 
         minim = new Minim(this);
         player = minim.loadFile(file);
-        fft = new FFT(player.bufferSize(), player.sampleRate());
         timer = new AnimationTimer() {
             GraphicsContext gc;
             double width;
             double height;
-            double left;
-            double right;
-            double band;
-            int ln = 40;
 
             @Override
             public void handle(long now) {
@@ -131,52 +128,19 @@ public class Controller {
                 gc.setFill(Color.gray(1));
                 gc.fillRect(0, 0, width, height);
                 gc.setFill(Color.gray(0.2));
-                gc.fillRect(0, height, width * (player.position() / (double) (player.length())), height - 2);
+                gc.fillRect(0, 0, width * (player.position() / (double) (player.length())), 2);
                 gc.beginPath();
                 //gc.fill();
                 gc.moveTo(0, height/2);
-                for(int i = 0; i < player.bufferSize()-100; i++)
+                for(int i = 0; i < player.bufferSize(); i++)
                 {
                     double left = height/2 + player.left.get(i) * height/2;
                     //System.out.print(left + " ");
-                    //gc.lineTo(width * ((double)i)/player.bufferSize(), left);
-                    if (i%30 ==0){
-                        gc.setFill(Color.GRAY);
-
-                        gc.fillOval(width * ((double)i)/player.bufferSize()-0.5, left+50, 1,1 );
-                        gc.fillOval(width * ((double)i)/player.bufferSize()-0.5, left-50, 1,1);
-
-                        gc.setFill(Color.LIGHTGRAY);
-                        gc.fillOval(width * ((double)i)/player.bufferSize()-0.5, left+100, 1,1 );
-                        gc.fillOval(width * ((double)i)/player.bufferSize()-0.5, left-100, 1,1 );
-                    }
-                    double left2=0;
-                    for (int m=80;m<101;m=m+16){
-                        left2 = canvas.getHeight()/2 + player.left.get(i+m) * canvas.getHeight()/2;
-                        gc.setStroke(new Color(0.25,(m%12)/12.0,0.72,1-m/100.0));
-                        gc.strokeLine(canvas.getWidth()*((double)i)/player.bufferSize(),left, canvas.getWidth()* ((double)(i+m))/player.bufferSize(),left2);
-                    }
-                }
-                gc.moveTo(0, height/2);
-                for(int i = 0; i < player.bufferSize(); i++)
-                {
-                    right = height/2 + player.right.get(i) * height/2;
-                    gc.lineTo(width * ((double)i)/player.bufferSize(), right);
+                    gc.lineTo(width * ((double)i)/player.bufferSize(), left);
                 }
                 //System.out.println();
                 //gc.closePath();
                 gc.stroke();
-                fft.forward(player.mix);
-                gc.setFill(Color.color(1, 0, 0, 0.5));
-                gc.setFill(Color.DARKBLUE);
-                for(int i = 0; i < ln; i++) {
-                    band = fft.getBand(i);
-                    for (int dots=0;dots<band*1.5;dots=dots + 5){
-                        gc.setFill(new Color((double)(i/ln),0.74,0.9,0.5));
-                        gc.fillOval(i*(width/ln),height-dots,2.5,2.5);
-                    }
-                    //gc.fillRect(i * (width/ln), 0, (width/ln), band);
-                }
             }
         };
         songtime.valueChangingProperty().addListener((ov, wasChanging, isChanging) -> {
