@@ -13,6 +13,7 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import sample.util.ResizableCanvas?>
 
 <VBox alignment="BOTTOM_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.Controller">
    <children>
@@ -23,10 +24,10 @@
                   <ListView fx:id="list" layoutX="38.0" layoutY="32.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
                </children>
             </AnchorPane>
-            <Pane fx:id="canvasHolder" maxHeight="-Infinity" maxWidth="-Infinity">
+            <AnchorPane fx:id="canvasHolder" >
                <children>
-                  <Canvas height="314.0" width="420.0" />
-               </children></Pane>
+                  <ResizableCanvas height="314.0" width="420.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+               </children></AnchorPane>
          </items>
       </SplitPane>
       <ToolBar>
