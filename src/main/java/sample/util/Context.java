@@ -10,7 +10,7 @@ public class Context {
     public final String IMAGES_ROOT;
     public final String BUTTON_IMAGES_ROOT;
     public final ObservableList<String> musicDirectories;
-    public final String[] extentions;
+    public final String[] extensions;
     public enum Comparisons {
         SONG_NAME, AUTHOR_NAME, MOD_TIME, SONG_LENGTH
     }
@@ -19,7 +19,7 @@ public class Context {
         IMAGES_ROOT = "/images";
         BUTTON_IMAGES_ROOT = IMAGES_ROOT + "/button";
         musicDirectories = FXCollections.observableArrayList();
-        musicDirectories.add("/Users/yonipedersen/Documents/music");
-        extentions = new String[]{"mp3"};
+        musicDirectories.add(System.getProperty("user.home")+"/Documents/music");
+        extensions = new String[]{"mp3"};
     }
 }

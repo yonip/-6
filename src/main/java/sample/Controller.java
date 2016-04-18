@@ -7,7 +7,6 @@ import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.embed.swt.FXCanvas;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -73,7 +72,7 @@ public class Controller {
     private boolean playing;
     private Minim minim;
     private FFT fft;
-    //private AudioPlayer player;
+    private AudioPlayer currentPlayer;
     private int pos;
     private AnimationTimer timer;
 
@@ -111,7 +110,7 @@ public class Controller {
         pos = 0;
         songName.setText(musicList.get(pos).fileName());
         //player = minim.loadFile(musicList.get(0).filePath());
-        fft = new FFT(musicList.get(pos).player().bufferSize(), musicList.get(pos).player().sampleRate());
+        fft = new FFT(player().bufferSize(), player().sampleRate());
         timer = new AnimationTimer() {
             GraphicsContext gc;
             double width;
@@ -124,16 +123,17 @@ public class Controller {
             @Override
             public void handle(long now) {
                 // make sure sliders and text are updated
-                songtime.setValue(musicList.get(pos).player().position());
-                time.setText(timeToText(musicList.get(pos).player().position()));
-                if (!musicList.get(pos).player().isPlaying() && playing) {
+                songtime.setValue(player().position());
+                time.setText(timeToText(player().position()));
+                if (!player().isPlaying() && playing) {
                     playPause.setGraphic(playImgs.getDefaultImage());
                     pause();
                 }
-                if (musicList.get(pos).player().position() == musicList.get(pos).player().length()) {
+                if (player().position() == player().length()) {
                     Platform.runLater(() -> {
-                        musicList.get(pos).player().close();
+                        player().close();
                         pos++;
+                        songtime.setMax(player().length());
                         songName.setText(musicList.get(pos).fileName());
                         playPause.setGraphic(pauseImgs.getDefaultImage());
                         play();
@@ -147,42 +147,42 @@ public class Controller {
                 gc.setFill(Color.gray(1));
                 gc.fillRect(0, 0, width, height);
                 gc.setFill(Color.gray(0.2));
-                gc.fillRect(0, height, width * (musicList.get(pos).player().position() / (double) (musicList.get(pos).player().length())), height - 2);
+                gc.fillRect(0, height, width * (player().position() / (double) (player().length())), height - 2);
                 gc.beginPath();
                 //gc.fill();
                 gc.moveTo(0, height/2);
-                for(int i = 0; i < musicList.get(pos).player().bufferSize()-100; i++)
+                for(int i = 0; i < player().bufferSize()-100; i++)
                 {
-                    double left = height/2 + musicList.get(pos).player().left.get(i) * height/2;
+                    double left = height/2 + player().left.get(i) * height/2;
                     //System.out.print(left + " ");
-                    //gc.lineTo(width * ((double)i)/musicList.get(pos).player().bufferSize(), left);
+                    //gc.lineTo(width * ((double)i)/player().bufferSize(), left);
                     if (i%30 ==0){
                         gc.setFill(Color.GRAY);
 
-                        gc.fillOval(width * ((double)i)/musicList.get(pos).player().bufferSize()-0.5, left+50, 1,1 );
-                        gc.fillOval(width * ((double)i)/musicList.get(pos).player().bufferSize()-0.5, left-50, 1,1);
+                        gc.fillOval(width * ((double)i)/player().bufferSize()-0.5, left+50, 1,1 );
+                        gc.fillOval(width * ((double)i)/player().bufferSize()-0.5, left-50, 1,1);
 
                         gc.setFill(Color.LIGHTGRAY);
-                        gc.fillOval(width * ((double)i)/musicList.get(pos).player().bufferSize()-0.5, left+100, 1,1 );
-                        gc.fillOval(width * ((double)i)/musicList.get(pos).player().bufferSize()-0.5, left-100, 1,1 );
+                        gc.fillOval(width * ((double)i)/player().bufferSize()-0.5, left+100, 1,1 );
+                        gc.fillOval(width * ((double)i)/player().bufferSize()-0.5, left-100, 1,1 );
                     }
                     double left2=0;
                     for (int m=80;m<101;m=m+16){
-                        left2 = canvas.getHeight()/2 + musicList.get(pos).player().left.get(i+m) * canvas.getHeight()/2;
+                        left2 = canvas.getHeight()/2 + player().left.get(i+m) * canvas.getHeight()/2;
                         gc.setStroke(new Color(0.25,(m%12)/12.0,0.72,1-m/100.0));
-                        gc.strokeLine(canvas.getWidth()*((double)i)/musicList.get(pos).player().bufferSize(),left, canvas.getWidth()* ((double)(i+m))/musicList.get(pos).player().bufferSize(),left2);
+                        gc.strokeLine(canvas.getWidth()*((double)i)/player().bufferSize(),left, canvas.getWidth()* ((double)(i+m))/player().bufferSize(),left2);
                     }
                 }
                 gc.moveTo(0, height/2);
-                for(int i = 0; i < musicList.get(pos).player().bufferSize(); i++)
+                for(int i = 0; i < player().bufferSize(); i++)
                 {
-                    right = height/2 + musicList.get(pos).player().right.get(i) * height/2;
-                    gc.lineTo(width * ((double)i)/musicList.get(pos).player().bufferSize(), right);
+                    right = height/2 + player().right.get(i) * height/2;
+                    gc.lineTo(width * ((double)i)/player().bufferSize(), right);
                 }
                 //System.out.println();
                 //gc.closePath();
                 gc.stroke();
-                fft.forward(musicList.get(pos).player().mix);
+                fft.forward(player().mix);
                 gc.setFill(Color.color(1, 0, 0, 0.5));
                 gc.setFill(Color.DARKBLUE);
                 for(int i = 0; i < ln; i++) {
@@ -197,29 +197,29 @@ public class Controller {
         };
         songtime.valueChangingProperty().addListener((ov, wasChanging, isChanging) -> {
             if (!isChanging) {
-                musicList.get(pos).player().cue((int) (songtime.getValue()));
+                player().cue((int) (songtime.getValue()));
             }
         });
         songtime.valueProperty().addListener((ov, oldVal, newVal) -> {
             progress.setProgress(newVal.doubleValue() / songtime.getMax());
             if (!songtime.isValueChanging()) {
-                double currentTime = musicList.get(pos).player().position();
+                double currentTime = player().position();
                 if (Math.abs(currentTime - newVal.doubleValue()) > 0.5) {
-                    musicList.get(pos).player().cue((int) newVal.doubleValue());
+                    player().cue((int) newVal.doubleValue());
                 }
             }
         });
         soundvol.valueProperty().addListener((observable, oldValue, newValue) -> {
             soundprog.setProgress((newValue.doubleValue()-soundvol.getMin()) / (soundvol.getMax()-soundvol.getMin()));
-            musicList.get(pos).player().setGain((float) newValue.doubleValue());
+            player().setGain((float) newValue.doubleValue());
         });
-        songtime.setMax(musicList.get(pos).player().length());
+        songtime.setMax(player().length());
         songtime.setValue(0);
         soundvol.setMax(14);
         soundvol.setMin(-80);
         soundvol.setValue(0);
         timer.start();
-        musicList.get(pos).player().pause();
+        player().pause();
     }
 
     private static String timeToText(int time) {
@@ -254,7 +254,7 @@ public class Controller {
     @FXML
     private void rewindPressed(MouseEvent event) {
         rewind.setGraphic(skipbackImgs.getPressedImage());
-        musicList.get(pos).player().cue(0);
+        player().cue(0);
     }
 
     @FXML
@@ -265,7 +265,7 @@ public class Controller {
     @FXML
     private void skipPressed(MouseEvent event) {
         skip.setGraphic(skipforwardImgs.getPressedImage());
-        musicList.get(pos).player().cue(musicList.get(pos).player().length());
+        player().cue(player().length());
     }
 
     @FXML
@@ -301,7 +301,7 @@ public class Controller {
             if(f.isFile()) {
                 String name = f.getName();
                 String ext = name.substring(name.lastIndexOf(".")+1);
-                for (String exten : Main.context.extentions) {
+                for (String exten : Main.context.extensions) {
                     if (ext.equals(exten)) {
                         musicList.add(new FileMeta(f, minim));
                         break;
@@ -314,12 +314,12 @@ public class Controller {
 
     private void play() {
         this.playing = true;
-        this.musicList.get(pos).player().play();
+        this.player().play();
     }
 
     private void pause() {
         this.playing = false;
-        this.musicList.get(pos).player().pause();
+        this.player().pause();
     }
 
     public InputStream createInput(String path) throws FileNotFoundException {
@@ -328,7 +328,7 @@ public class Controller {
 
     public void stop() {
         for (FileMeta f : musicList) {
-            f.player().close();
+            f.player.close();
         }
         minim.stop();
         timer.stop();
@@ -427,10 +427,9 @@ public class Controller {
                     return modTime.compareTo(o.modTime);
             }
         }
+    }
 
-        public AudioPlayer player() {
-
-            return player;
-        }
+    private AudioPlayer player() {
+        return musicList.get(pos).player;
     }
 }
