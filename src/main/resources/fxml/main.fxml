@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import sample.util.*?>
 <?import javafx.scene.media.*?>
 <?import javafx.scene.shape.*?>
 <?import javafx.scene.*?>
@@ -15,8 +16,17 @@
 <?import javafx.scene.control.Label?>
 <?import sample.util.ResizableCanvas?>
 
-<VBox alignment="BOTTOM_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.Controller">
+<VBox alignment="BOTTOM_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.Controller">
    <children>
+      <MenuBar>
+        <menus>
+          <Menu mnemonicParsing="false" text="File">
+            <items>
+              <MenuItem fx:id="settingsMenuItem" mnemonicParsing="false" onAction="#openSettings" text="Settings..." />
+            </items>
+          </Menu>
+        </menus>
+      </MenuBar>
       <SplitPane dividerPositions="0.28595317725752506">
          <items>
             <AnchorPane minHeight="0.0" minWidth="0.0">
@@ -24,7 +34,7 @@
                   <ListView fx:id="list" layoutX="38.0" layoutY="32.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
                </children>
             </AnchorPane>
-            <AnchorPane fx:id="canvasHolder" >
+            <AnchorPane fx:id="canvasHolder">
                <children>
                   <ResizableCanvas height="314.0" width="420.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
                </children></AnchorPane>

@@ -2,9 +2,6 @@ package sample.util;
 
 import javafx.scene.canvas.Canvas;
 
-/**
- * Created by yonipedersen on 4/12/16.
- */
 public class ResizableCanvas extends Canvas {
 
     @Override
