@@ -355,7 +355,6 @@ public class Controller {
                 ind = fileName.length();
                 ind2 = ind;
             }
-            System.out.println(ind + " " + fileName.length());
             artist = !player.getMetaData().author().isEmpty() ? player.getMetaData().author() : fileName.substring(0, ind).trim();
             song = !player.getMetaData().title().isEmpty() ? player.getMetaData().title() : fileName.substring(ind2).trim();
             modTime = new Date(file.lastModified());
