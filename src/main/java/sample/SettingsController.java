@@ -1,19 +1,19 @@
 package sample;
 
-import java.net.URL;
-import java.util.ResourceBundle;
-
-import javafx.event.*;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
-import javafx.scene.control.*;
-import javafx.scene.input.*;
+import javafx.scene.control.ListView;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.text.Text;
+import javafx.stage.DirectoryChooser;
+
+import java.io.File;
 
 public class SettingsController{
 
 	@FXML
-	private TextArea musicDir;
+    private ListView musicDirectoriesView;
     @FXML
     private Text saved;
     @FXML
@@ -22,11 +22,15 @@ public class SettingsController{
     private RadioButton repAll;
     @FXML
     private RadioButton repSel;
+    private DirectoryChooser directoryChooser;
 
 	private String directories;
 	ToggleGroup repSetting;
 
+    @FXML
 	public void initialize() {
+        directoryChooser = new DirectoryChooser();
+        musicDirectoriesView.setItems(Main.context.musicDirectories);
 		repSetting = new ToggleGroup();
 		repNone.setToggleGroup(repSetting);
 		repAll.setToggleGroup(repSetting);
@@ -37,10 +41,19 @@ public class SettingsController{
 	}
 
 	@FXML
-    void update(MouseEvent event) {
-		String dir=musicDir.getText();
-		saved.setText("saved");
-		
+    private void add(MouseEvent event) {
+        File chosen = directoryChooser.showDialog(musicDirectoriesView.getScene().getWindow());
+        if (chosen != null) {
+            Main.context.musicDirectories.add(chosen.getAbsolutePath());
+        }
+    }
+
+    @FXML
+    private void remove(MouseEvent event) {
+        int index = musicDirectoriesView.getSelectionModel().getSelectedIndex();
+        if (index >= 0) {
+            Main.context.musicDirectories.remove(musicDirectoriesView.getSelectionModel().getSelectedIndex());
+        }
     }
 
 }
