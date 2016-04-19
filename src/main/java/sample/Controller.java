@@ -28,9 +28,7 @@ import sample.util.ButtonImage;
 import sample.util.Context;
 
 import java.io.*;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Stack;
+import java.util.*;
 
 public class Controller {
     @FXML
@@ -42,6 +40,8 @@ public class Controller {
     @FXML
     private ListView list;
     private ObservableList<FileMeta> musicList;
+    private Map<Date, FileMeta> files;
+
     @FXML
     private Text songName;
     @FXML
@@ -87,6 +87,7 @@ public class Controller {
     @FXML
     public void initialize() {
         System.out.println(canvasHolder.getHeight() + " " + canvasHolder.getWidth());
+        files = new HashMap<>();
         canvas = (Canvas)canvasHolder.getChildren().get(0);
         System.out.println(canvas.getHeight() + " " + canvas.getWidth());
         playPause.setText("");
@@ -279,7 +280,7 @@ public class Controller {
         Stage stage = new Stage();
         stage.setScene(new Scene(fxmlLoader.load()));
         stage.setAlwaysOnTop(true);
-        stage.setOnCloseRequest(event1 -> read());
+        stage.setOnCloseRequest(event1 -> Platform.runLater(() -> read()));
         stage.show();
     }
 
@@ -289,6 +290,8 @@ public class Controller {
             dirs.push(new File(path));
         }
         File f;
+        Date d;
+        Map<Date, FileMeta> holder = new HashMap();
         while (!dirs.isEmpty()) {
             f = dirs.pop();
             if (!f.exists()) {
@@ -302,13 +305,29 @@ public class Controller {
                 String name = f.getName();
                 String ext = name.substring(name.lastIndexOf(".")+1);
                 for (String exten : Main.context.extensions) {
-                    if (ext.equals(exten)) {
-                        musicList.add(new FileMeta(f, minim));
+                    if (ext.equalsIgnoreCase(exten)) {
+                        d = new Date(f.lastModified());
+                        if (files.get(d) == null) {
+                            holder.put(d, new FileMeta(f, minim));
+                        } else if (files.get(d).filePath.equals(f.getAbsolutePath())) {
+                            holder.put(d, files.get(d));
+                        } else {
+                            holder.put(d, new FileMeta(f, minim));
+                        }
                         break;
                     }
                 }
             }
         }
+        Collection<FileMeta> vals = files.values();
+        for (FileMeta v : vals) {
+            if (!holder.containsValue(v)) {
+                v.player.close();
+            }
+        }
+        files = holder;
+        musicList.clear();
+        musicList.addAll(files.values().toArray(new FileMeta[0]));
         musicList.sort(null);
     }
 
