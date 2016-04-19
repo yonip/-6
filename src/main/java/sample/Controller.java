@@ -137,7 +137,7 @@ public class Controller {
                 gc.moveTo(0, height/2);
                 for(int i = 0; i < player.bufferSize()-100; i++)
                 {
-                    double left = height/2 + player.left.get(i) * height/2;
+                    double left = (height/2 + player.left.get(i) * height/2);
                     //System.out.print(left + " ");
                     //gc.lineTo(width * ((double)i)/player.bufferSize(), left);
                     if (i%30 ==0){
@@ -152,16 +152,24 @@ public class Controller {
                     }
                     double left2=0;
                     for (int m=80;m<101;m=m+16){
-                        left2 = canvas.getHeight()/2 + player.left.get(i+m) * canvas.getHeight()/2;
+                        left2 = (canvas.getHeight()/2 + player.left.get(i+m) * canvas.getHeight()/2);
                         gc.setStroke(new Color(0.25,(m%12)/12.0,0.72,1-m/100.0));
-                        gc.strokeLine(canvas.getWidth()*((double)i)/player.bufferSize(),left, canvas.getWidth()* ((double)(i+m))/player.bufferSize(),left2);
+                        gc.strokeLine(canvas.getWidth()*((double)i)/player.bufferSize(),left*0.5, canvas.getWidth()* ((double)(i+m))/player.bufferSize(),left2*0.5);
                     }
                 }
                 gc.moveTo(0, height/2);
-                for(int i = 0; i < player.bufferSize(); i++)
+
+                double right2=0;
+                for(int i = 0; i < player.bufferSize()-100; i++)
                 {
                     right = height/2 + player.right.get(i) * height/2;
                     gc.lineTo(width * ((double)i)/player.bufferSize(), right);
+
+                    for (int m=80;m<101;m=m+20){
+                        right2 = height/2 + player.right.get(i+m) * height/2;
+                        gc.setStroke(new Color(0.25,0.4,0.72,1-m/100.0));
+                        gc.strokeLine(canvas.getWidth()*((double)i)/player.bufferSize(),right, canvas.getWidth()* ((double)(i+m))/player.bufferSize(),right2);
+                    }
                 }
                 //System.out.println();
                 //gc.closePath();

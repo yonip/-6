@@ -58,7 +58,7 @@ public class VisualizerMain extends Application {
                 gc.moveTo(0, 50);
                 for(int i = 0; i < player.bufferSize()-5; i++)
                 {
-                    double left = canvas.getHeight()/2 + player.left.get(i) * canvas.getHeight()/2;
+                    double left = (canvas.getHeight()/2 + player.left.get(i) * canvas.getHeight()/2)*0.5;
                     //System.out.print(left + " ");
                     gc.lineTo(canvas.getWidth() * ((double)i)/player.bufferSize(), left);
                 }
