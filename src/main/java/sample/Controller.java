@@ -8,6 +8,7 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.JavaFXBuilderFactory;
@@ -98,9 +99,9 @@ public class Controller {
         repeatImgs = new ButtonImage("repeat");
         skipbackImgs = new ButtonImage("skipback");
         skipforwardImgs = new ButtonImage("skipforward");
-        playPause.setGraphic(playImgs.getDefaultImage());
-        skip.setGraphic(skipforwardImgs.getDefaultImage());
-        rewind.setGraphic(skipbackImgs.getDefaultImage());
+        playPause.setGraphic(playImgs.getImage());
+        skip.setGraphic(skipforwardImgs.getImage());
+        rewind.setGraphic(skipbackImgs.getImage());
 
         //media = new Media(getClass().getResource("/music/Billy Boyd - The Last Goodbye.mp3").toString());
 
@@ -127,17 +128,14 @@ public class Controller {
                 songtime.setValue(player().position());
                 time.setText(timeToText(player().position()));
                 if (!player().isPlaying() && playing) {
-                    playPause.setGraphic(playImgs.getDefaultImage());
-                    pause();
+                    play();
                 }
                 if (player().position() == player().length()) {
                     Platform.runLater(() -> {
-                        player().close();
                         pos++;
                         songtime.setMax(player().length());
                         songName.setText(musicList.get(pos).fileName());
-                        playPause.setGraphic(pauseImgs.getDefaultImage());
-                        play();
+                        playPause.setGraphic(playImgs.getImage());
                     });
                 }
                 // now to drawing things
@@ -234,44 +232,67 @@ public class Controller {
 
     @FXML
     private void playPausePressed(MouseEvent event) {
+        pauseImgs.setPressed(true);
+        playImgs.setPressed(true);
+        playPause(event);
+    }
+
+    @FXML
+    private void playPause(Event event) {
         if (playing) {
-            playPause.setGraphic(pauseImgs.getPressedImage());
+            playPause.setGraphic(playImgs.getImage());
             pause();
         } else {
-            playPause.setGraphic(playImgs.getPressedImage());
+            playPause.setGraphic(pauseImgs.getImage());
             play();
         }
     }
 
     @FXML
     private void playPauseReleased(MouseEvent event) {
+        pauseImgs.setPressed(false);
+        playImgs.setPressed(false);
         if (playing) {
-            playPause.setGraphic(pauseImgs.getDefaultImage());
+            playPause.setGraphic(pauseImgs.getImage());
         } else {
-            playPause.setGraphic(playImgs.getDefaultImage());
+            playPause.setGraphic(playImgs.getImage());
         }
     }
 
     @FXML
     private void rewindPressed(MouseEvent event) {
-        rewind.setGraphic(skipbackImgs.getPressedImage());
+        skipbackImgs.setPressed(true);
+        rewind.setGraphic(skipbackImgs.getImage());
+        rewind(event);
+    }
+
+    @FXML
+    private void rewind(Event event) {
         player().cue(0);
     }
 
     @FXML
     private void rewindReleased(MouseEvent event) {
-        rewind.setGraphic(skipbackImgs.getDefaultImage());
+        skipbackImgs.setPressed(false);
+        rewind.setGraphic(skipbackImgs.getImage());
     }
 
     @FXML
     private void skipPressed(MouseEvent event) {
-        skip.setGraphic(skipforwardImgs.getPressedImage());
+        skipforwardImgs.setPressed(true);
+        skip.setGraphic(skipforwardImgs.getImage());
+        skip(event);
+    }
+
+    @FXML
+    private void skip(Event event) {
         player().cue(player().length());
     }
 
     @FXML
     private void skipReleased(MouseEvent event) {
-        skip.setGraphic(skipforwardImgs.getDefaultImage());
+        skipforwardImgs.setPressed(false);
+        skip.setGraphic(skipforwardImgs.getImage());
     }
 
     @FXML
@@ -319,12 +340,11 @@ public class Controller {
                 }
             }
         }
-        Collection<FileMeta> vals = files.values();
-        for (FileMeta v : vals) {
+        files.values().forEach(v -> {
             if (!holder.containsValue(v)) {
                 v.player.close();
             }
-        }
+        });
         files = holder;
         musicList.clear();
         musicList.addAll(files.values().toArray(new FileMeta[0]));
@@ -448,6 +468,9 @@ public class Controller {
     }
 
     private AudioPlayer player() {
+        if (musicList.size() == 0) {
+            throw new IllegalStateException("y u no hev songs in folder");
+        }
         return musicList.get(pos).player;
     }
 }
