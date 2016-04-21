@@ -76,6 +76,8 @@ public class Controller {
     private AudioPlayer currentPlayer;
     private int pos;
     private AnimationTimer timer;
+    private long lastRewind;
+    private long skipbackTimeout = 250;
 
     public static final int SECOND = 1000;
     public static final int MINUTE = 60 * SECOND;
@@ -136,6 +138,7 @@ public class Controller {
                         songtime.setMax(player().length());
                         songName.setText(musicList.get(pos).fileName());
                         playPause.setGraphic(playImgs.getImage());
+                        player().cue(0);
                     });
                 }
                 // now to drawing things
@@ -268,6 +271,13 @@ public class Controller {
 
     @FXML
     private void rewind(Event event) {
+        if (pos > 0 && (player().position() == 0 || System.currentTimeMillis() - lastRewind < skipbackTimeout)) {
+            pos--;
+            songtime.setMax(player().length());
+            songName.setText(musicList.get(pos).fileName());
+            playPause.setGraphic(playImgs.getImage());
+        }
+        lastRewind = System.currentTimeMillis();
         player().cue(0);
     }
 
