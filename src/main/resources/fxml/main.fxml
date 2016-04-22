@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.input.*?>
 <?import sample.util.*?>
 <?import javafx.scene.media.*?>
 <?import javafx.scene.shape.*?>
@@ -16,7 +17,6 @@
 <?import javafx.scene.control.Label?>
 <?import sample.util.ResizableCanvas?>
 
-
 <AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.Controller">
    <children>
       <VBox alignment="BOTTOM_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
@@ -28,6 +28,25 @@
                     <MenuItem fx:id="settingsMenuItem" mnemonicParsing="false" onAction="#openSettings" text="Settings..." />
                   </items>
                 </Menu>
+                  <Menu mnemonicParsing="false" text="Playback">
+                    <items>
+                      <MenuItem mnemonicParsing="false" onAction="#playPause" text="Play/Pause">
+                           <accelerator>
+                              <KeyCodeCombination alt="UP" code="SPACE" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
+                           </accelerator>
+                        </MenuItem>
+                        <MenuItem mnemonicParsing="false" onAction="#skip" text="Skip">
+                           <accelerator>
+                              <KeyCodeCombination alt="DOWN" code="RIGHT" control="UP" meta="UP" shift="UP" shortcut="UP" />
+                           </accelerator>
+                        </MenuItem>
+                        <MenuItem mnemonicParsing="false" onAction="#rewind" text="Rewind">
+                           <accelerator>
+                              <KeyCodeCombination alt="DOWN" code="LEFT" control="UP" meta="UP" shift="UP" shortcut="UP" />
+                           </accelerator>
+                        </MenuItem>
+                    </items>
+                  </Menu>
               </menus>
             </MenuBar>
             <SplitPane dividerPositions="0.28595317725752506">

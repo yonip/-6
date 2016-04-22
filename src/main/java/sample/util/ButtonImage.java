@@ -14,8 +14,10 @@ public class ButtonImage {
     private static final double FIT_WIDTH = 26;
     private ImageView pressedImage;
     private ImageView defaultImage;
+    private boolean isPressed;
 
     public ButtonImage(String name) {
+        isPressed = false;
         pressedImage = new ImageView(new Image(getClass().getResourceAsStream(Main.context.BUTTON_IMAGES_ROOT + "/" + name + PRESSED_EXT)));
         pressedImage.setFitHeight(FIT_HEIGHT);
         pressedImage.setFitWidth(FIT_WIDTH);
@@ -24,11 +26,12 @@ public class ButtonImage {
         defaultImage.setFitWidth(FIT_WIDTH);
     }
 
-    public ImageView getDefaultImage() {
-        return defaultImage;
+    public void setPressed(boolean isPressed) {
+        this.isPressed = isPressed;
     }
 
-    public ImageView getPressedImage() {
-        return pressedImage;
+    public ImageView getImage() {
+        return isPressed ? pressedImage : defaultImage;
     }
+
 }
