@@ -146,48 +146,84 @@ public class Controller {
                 width = canvas.getWidth();
                 height = canvas.getHeight();
                 gc.setStroke(Color.BLACK);
-                gc.setFill(Color.gray(1));
+                //gc.setFill(Color.gray(1)); ORIGINAL
+                gc.setFill(Color.BLACK);
                 gc.fillRect(0, 0, width, height);
                 gc.setFill(Color.gray(0.2));
                 gc.fillRect(0, height, width * (player().position() / (double) (player().length())), height - 2);
                 gc.beginPath();
                 //gc.fill();
-                gc.moveTo(0, height/2);
-                for(int i = 0; i < player().bufferSize()-100; i++)
+                //gc.moveTo(0, height/2);
+                double polarR = 100;
+                double polarTheta=0;
+                double polarR2 =100;
+                double polarTheta2 = 0;
+                double left = 0;
+                double left2 = 0;
+                for(int i = 0; i < player().bufferSize(); i=i+(int)(10-Math.abs(Math.random()*8)))
                 {
-                    double left = (height/2 + player.left.get(i) * height/2);
+                    left = (height/2 + player().left.get(i) * height/2);
+                    //gc.lineTo(width * ((double)i)/player().bufferSize(), left);
+                    //polarR=Math.abs(Math.sin(player().position() / 10000000.0)) + (double)left/5.0;
+
+                    //outside radius
+                    polarR = 20*Math.abs(Math.cos(player().position()/1000.0)) + left/2.0;
+                    polarTheta = (double)(i+now/100000000.0)/((double)player().bufferSize())*Math.PI*2;
+                    //gc.lineTo(polarR*Math.cos(polarTheta)+width/2,polarR*Math.sin(polarTheta)+height/2);
                     //System.out.print(left + " ");
                     //gc.lineTo(width * ((double)i)/player().bufferSize(), left);
-                    if (i%30 ==0){
-                        gc.setFill(Color.GRAY);
 
-                        gc.fillOval(width * ((double)i)/player().bufferSize()-0.5, left+50, 1,1 );
-                        gc.fillOval(width * ((double)i)/player().bufferSize()-0.5, left-50, 1,1);
+                    if (i<player().bufferSize()){
+                        for (int m=80;m<101;m=m+20) {
+                            //y values
+                            left2 = (canvas.getHeight() / 2 + player().left.get((i + m)%player().bufferSize()) * canvas.getHeight() / 2);
+                            left2 = Math.log(left2)+height/2;
 
-                        gc.setFill(Color.LIGHTGRAY);
-                        gc.fillOval(width * ((double)i)/player().bufferSize()-0.5, left+100, 1,1 );
-                        gc.fillOval(width * ((double)i)/player().bufferSize()-0.5, left-100, 1,1 );
+                            //converting to polar
+                            polarR2 = 40*(Math.abs(Math.cos(now/100000000000.0)))+left2/2.0;
+                            //polarR2 =  left2 / 5.0;
+
+                            polarTheta2 = (double) (i + m+player().position()/100000.0) / ((double) player().bufferSize()) * Math.PI * 2;
+
+                            //color and drawing the line
+                            gc.setStroke(new Color(Math.abs(Math.cos(player().position()/100000.0)), Math.abs(Math.sin(player().position()/5000000.0)), Math.abs(Math.cos(now/60000000000.0)), 0.2));
+                            gc.strokeLine(polarR * Math.cos(polarTheta) + width / 2, polarR * Math.sin(polarTheta) + height / 2, polarR2 * Math.cos(polarTheta2) + width / 2, polarR2 * Math.sin(polarTheta2) + height / 2);
+                        }
                     }
-                    double left2=0;
-                    for (int m=80;m<101;m=m+16){
-                        left2 = (canvas.getHeight()/2 + player.left.get(i+m) * canvas.getHeight()/2);
-                        gc.setStroke(new Color(0.25,(m%12)/12.0,0.72,1-m/100.0));
-                        gc.strokeLine(canvas.getWidth()*((double)i)/player.bufferSize(),left*0.5, canvas.getWidth()* ((double)(i+m))/player.bufferSize(),left2*0.5);
-                    }
+
                 }
                 gc.moveTo(0, height/2);
 
-                double right2=0;
-                for(int i = 0; i < player.bufferSize()-100; i++)
-                {
-                    right = height/2 + player.right.get(i) * height/2;
-                    gc.lineTo(width * ((double)i)/player.bufferSize(), right);
 
-                    for (int m=80;m<101;m=m+20){
-                        right2 = height/2 + player.right.get(i+m) * height/2;
-                        gc.setStroke(new Color(0.25,0.4,0.72,1-m/100.0));
-                        gc.strokeLine(canvas.getWidth()*((double)i)/player.bufferSize(),right, canvas.getWidth()* ((double)(i+m))/player.bufferSize(),right2);
-                    }
+                //Some cool setups:
+                //right = height/2 + player().right.get(i)*height/2
+                //inside for loop, right2 = Math.log(right2)+height/2
+                double right2=0;
+                double extraX=0;
+                double extraY=0;
+                double extraY2=0;
+                double xValue=0;
+                double xValueNext=0;
+                double zoom=0;
+                for(int i = 0; i < player().bufferSize(); i=i+10)
+                {
+                    right = height/2 + player().right.get(i) * height/2;
+                    right = right -200;
+                    //right = Math.sqrt(right)+height/2;
+                    //gc.lineTo(width * ((double)i)/player().bufferSize(), right);
+                    gc.strokeLine(width*(double)i/player().bufferSize(),right/2.0+height/2,width*(double)i/player().bufferSize(),height/2-right/2.0);
+                    int forLoop = (int)(80*Math.abs(Math.sin(player().position()/10000.0)));
+                    /**
+                    for (int m=forLoop;m<forLoop+2;m=m+20){
+                        right2 = height/2 + player().right.get(i+m) * height/2;
+                        xValue = canvas.getWidth()*((double)i)/player().bufferSize();
+                        xValueNext = canvas.getWidth()* ((double)(i+m))/player().bufferSize();
+                        right2 = Math.log(right2+30*Math.random())+height/2;
+                        //gc.setStroke(new Color(0.25,0.4,0.72,1-m/100.0));
+                        gc.setStroke(new Color(Math.abs((double)Math.sin(player().position()/40000.0)),Math.abs(Math.sin(0.4-(player().position()/20000.0))),0.7,0.5));
+                        zoom = 3*Math.sin(player().position()/10000.0);
+                        //gc.strokeLine((xValue-width/2)*zoom+width/2,(right-height/2.0)*zoom+height/2, (xValueNext-width/2)*zoom+width/2,(right2-height/2)*zoom+height/2);
+                    } **/
                 }
                 //System.out.println();
                 //gc.closePath();
