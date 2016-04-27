@@ -19,7 +19,6 @@ import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
@@ -100,10 +99,8 @@ public class Controller {
      */
     @FXML
     public void initialize() {
-        System.out.println(canvasHolder.getHeight() + " " + canvasHolder.getWidth());
         files = new HashMap<>();
         canvas = (Canvas)canvasHolder.getChildren().get(0);
-        System.out.println(canvas.getHeight() + " " + canvas.getWidth());
         playPause.setText("");
         skip.setText("");
         rewind.setText("");
