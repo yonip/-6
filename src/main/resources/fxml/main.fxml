@@ -19,7 +19,7 @@
 
 <AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.Controller">
    <children>
-      <VBox alignment="BOTTOM_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <VBox alignment="CENTER" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
             <MenuBar>
               <menus>
@@ -49,11 +49,18 @@
                   </Menu>
               </menus>
             </MenuBar>
-            <SplitPane dividerPositions="0.28595317725752506">
+            <SplitPane dividerPositions="0.28595317725752506" VBox.vgrow="ALWAYS">
                <items>
                   <AnchorPane minHeight="0.0" minWidth="0.0">
                      <children>
-                        <ListView fx:id="list" layoutX="38.0" layoutY="32.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                        <TableView fx:id="songTable" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                          <columns>
+                            <TableColumn fx:id="songTitleColumn" editable="false" prefWidth="101.0" text="Title" />
+                            <TableColumn fx:id="songAuthorColumn" editable="false" prefWidth="49.0" text="Author" />
+                              <TableColumn fx:id="songDurationColumn" editable="false" prefWidth="101.0" text="Duration" />
+                              <TableColumn fx:id="songAgeColumn" editable="false" prefWidth="101.0" text="Age" />
+                          </columns>
+                        </TableView>
                      </children>
                   </AnchorPane>
                   <AnchorPane fx:id="canvasHolder">

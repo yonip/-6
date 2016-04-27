@@ -5,6 +5,9 @@ import ddf.minim.Minim;
 import ddf.minim.analysis.FFT;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -15,12 +18,8 @@ import javafx.fxml.JavaFXBuilderFactory;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Button;
-import javafx.scene.control.ListView;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.Slider;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
@@ -40,9 +39,8 @@ public class Controller {
     @FXML
     private Pane canvasHolder;
     private Canvas canvas;
-    @FXML
-    private ListView list;
     private ObservableList<FileMeta> musicList;
+    private ObservableList<Integer> presList;
     private Map<Date, FileMeta> files;
 
     @FXML
@@ -65,6 +63,17 @@ public class Controller {
     private Slider soundvol;
     @FXML
     private ProgressBar soundprog;
+
+    @FXML
+    private TableView<Integer> songTable;
+    @FXML
+    private TableColumn<Integer, String> songTitleColumn;
+    @FXML
+    private TableColumn<Integer, String> songAuthorColumn;
+    @FXML
+    private TableColumn<Integer, String> songDurationColumn;
+    @FXML
+    private TableColumn<Integer, String> songAgeColumn;
 
     private ButtonImage playImgs;
     private ButtonImage pauseImgs;
@@ -107,15 +116,17 @@ public class Controller {
         skip.setGraphic(skipforwardImgs.getImage());
         rewind.setGraphic(skipbackImgs.getImage());
 
-        //media = new Media(getClass().getResource("/music/Billy Boyd - The Last Goodbye.mp3").toString());
-
         minim = new Minim(this);
         musicList = FXCollections.observableArrayList();
-        list.setItems(musicList);
+        presList = FXCollections.observableArrayList();
+        songTable.setItems(presList);
+        songTitleColumn.setCellValueFactory(param -> musicList.get(param.getValue()).title);
+        songAuthorColumn.setCellValueFactory(param -> musicList.get(param.getValue()).artist);
+        songAgeColumn.setCellValueFactory(param -> new ReadOnlyStringWrapper(musicList.get(param.getValue()).modTime.toString()));
+        songDurationColumn.setCellValueFactory(param -> new ReadOnlyStringWrapper(timeToText(musicList.get(param.getValue()).player.length()) + "." + musicList.get(param.getValue()).player.length() % 1000));
         read();
         pos = 0;
         songName.setText(musicList.get(pos).fileName());
-        //player = minim.loadFile(musicList.get(0).filePath());
         fft = new FFT(player().bufferSize(), player().sampleRate());
         timer = new AnimationTimer() {
             GraphicsContext gc;
@@ -139,7 +150,6 @@ public class Controller {
                         pos++;
                         songtime.setMax(player().length());
                         songName.setText(musicList.get(pos).fileName());
-                        playPause.setGraphic(playImgs.getImage());
                         player().cue(0);
                     });
                 }
@@ -318,10 +328,10 @@ public class Controller {
     @FXML
     private void rewind(Event event) {
         if (pos > 0 && (player().position() == 0 || System.currentTimeMillis() - lastRewind < skipbackTimeout)) {
+            player().pause();
             pos--;
             songtime.setMax(player().length());
             songName.setText(musicList.get(pos).fileName());
-            playPause.setGraphic(playImgs.getImage());
         }
         lastRewind = System.currentTimeMillis();
         player().cue(0);
@@ -342,7 +352,11 @@ public class Controller {
 
     @FXML
     private void skip(Event event) {
-        player().cue(player().length());
+        player().pause();
+        pos++;
+        songtime.setMax(player().length());
+        songName.setText(musicList.get(pos).fileName());
+        player().cue(0);
     }
 
     @FXML
@@ -357,7 +371,7 @@ public class Controller {
         Stage stage = new Stage();
         stage.setScene(new Scene(fxmlLoader.load()));
         stage.setAlwaysOnTop(true);
-        stage.setOnCloseRequest(event1 -> Platform.runLater(() -> read()));
+        stage.setOnCloseRequest(event1 -> Platform.runLater(this::read));
         stage.show();
     }
 
@@ -368,7 +382,7 @@ public class Controller {
         }
         File f;
         Date d;
-        Map<Date, FileMeta> holder = new HashMap();
+        Map<Date, FileMeta> holder = new HashMap<>();
         while (!dirs.isEmpty()) {
             f = dirs.pop();
             if (!f.exists()) {
@@ -405,6 +419,10 @@ public class Controller {
         musicList.clear();
         musicList.addAll(files.values().toArray(new FileMeta[0]));
         musicList.sort(null);
+        presList.clear();
+        for (int i = 0; i < musicList.size(); i++) {
+            presList.add(i);
+        }
     }
 
     private void play() {
@@ -429,10 +447,10 @@ public class Controller {
         timer.stop();
     }
 
-    private class FileMeta implements Comparable<FileMeta> {
-        private String song;
-        private String artist;
-        private String album;
+    public class FileMeta implements Comparable<FileMeta> {
+        private StringProperty title;
+        private StringProperty artist;
+        private StringProperty album;
         private Date modTime;
         private String fileName;
         private String filePath;
@@ -450,15 +468,15 @@ public class Controller {
                 ind = fileName.length();
                 ind2 = ind;
             }
-            artist = !player.getMetaData().author().isEmpty() ? player.getMetaData().author() : fileName.substring(0, ind).trim();
-            song = !player.getMetaData().title().isEmpty() ? player.getMetaData().title() : fileName.substring(ind2).trim();
+            artistProperty().set(!player.getMetaData().author().isEmpty() ? player.getMetaData().author() : fileName.substring(0, ind).trim());
+            titleProperty().set(!player.getMetaData().title().isEmpty() ? player.getMetaData().title() : fileName.substring(ind2).trim());
             modTime = new Date(file.lastModified());
             comparison = Context.Comparisons.SONG_NAME;
         }
 
         @Override
         public String toString() {
-            return (song.isEmpty() ? "" : song + " - ") + artist + " | " + modTime.toString();
+            return (titleProperty().getValueSafe().isEmpty() ? "" : title + " - ") + artist + " | " + modTime.toString();
         }
 
         public String fileName() {
@@ -511,15 +529,48 @@ public class Controller {
         public int compareTo(FileMeta o) {
             switch (comparison) {
                 case AUTHOR_NAME:
-                    return artist.compareTo(o.artist);
+                    return artist().compareTo(o.artist());
                 case SONG_NAME:
-                    return song.compareTo(o.song);
+                    return title().compareTo(o.title());
                 case SONG_LENGTH:
                     return player.length() - o.player.length();
                 case MOD_TIME:
                 default:
                     return modTime.compareTo(o.modTime);
             }
+        }
+
+        public StringProperty titleProperty() {
+            if (title == null) {
+                title = new SimpleStringProperty(this, "title");
+            }
+            return title;
+        }
+
+        public StringProperty artistProperty() {
+            if (artist == null) {
+                artist = new SimpleStringProperty(this, "artist");
+            }
+            return artist;
+        }
+
+        public StringProperty albumProperty() {
+            if (album == null) {
+                album = new SimpleStringProperty(this, "album");
+            }
+            return album;
+        }
+
+        public String title() {
+            return titleProperty().getValueSafe();
+        }
+
+        public String artist() {
+            return artistProperty().getValueSafe();
+        }
+
+        public String album() {
+            return albumProperty().getValueSafe();
         }
     }
 
