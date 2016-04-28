@@ -29,6 +29,11 @@ import sample.util.ButtonImage;
 import sample.util.Context;
 
 import java.io.*;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalField;
+import java.time.temporal.TemporalUnit;
 import java.util.*;
 
 public class Controller {
@@ -119,7 +124,42 @@ public class Controller {
         songTable.setItems(presList);
         songTitleColumn.setCellValueFactory(param -> musicList.get(param.getValue()).title);
         songAuthorColumn.setCellValueFactory(param -> musicList.get(param.getValue()).artist);
-        songAgeColumn.setCellValueFactory(param -> new ReadOnlyStringWrapper(musicList.get(param.getValue()).modTime.toString()));
+        songAgeColumn.setCellValueFactory(param -> {
+            long secs = Clock.systemUTC().instant().getEpochSecond() - (musicList.get(param.getValue()).modTime.getTime()/1000);
+            long mins = secs/60;
+            long hrs = mins/60;
+            long days = hrs/24;
+            long weeks = days/7;
+            long months = (long) (days/30.42);
+            long years = months/12;
+            String word;
+            long res;
+            if (years > 0) {
+                res = years;
+                word = "year";
+            } else if (months > 0) {
+                res = months;
+                word = "month";
+            } else if (weeks > 0) {
+                res = weeks;
+                word = "week";
+            } else if (days > 0) {
+                res = days;
+                word = "day";
+            } else if (hrs > 0) {
+                res = hrs;
+                word = "hour";
+            } else if (mins > 0) {
+                res = mins;
+                word = "minute";
+            } else {
+                res = -1;
+                word = "Just now";
+            }
+            word += res > 1 ? "s" : ""; // plurals
+            word = (res > 0 ? res + " " : "") + word; // make sure "Just now" doesn't have time appended;
+            return new ReadOnlyStringWrapper(word);
+        });
         songDurationColumn.setCellValueFactory(param -> new ReadOnlyStringWrapper(timeToText(musicList.get(param.getValue()).player.length()) + "." + musicList.get(param.getValue()).player.length() % 1000));
         read();
         pos = 0;
