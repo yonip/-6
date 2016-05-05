@@ -55,8 +55,8 @@
                      <children>
                         <TableView fx:id="songTable" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                           <columns>
-                            <TableColumn fx:id="songTitleColumn" editable="false" prefWidth="101.0" text="Title" />
-                            <TableColumn fx:id="songAuthorColumn" editable="false" prefWidth="49.0" text="Author" />
+                            <TableColumn fx:id="songTitleColumn" editable="false" prefWidth="200.0" text="Title" />
+                            <TableColumn fx:id="songAuthorColumn" editable="false" prefWidth="175.0" text="Author" />
                               <TableColumn fx:id="songDurationColumn" editable="false" prefWidth="101.0" text="Duration" />
                               <TableColumn fx:id="songAgeColumn" editable="false" prefWidth="101.0" text="Age" />
                           </columns>
