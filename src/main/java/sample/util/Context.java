@@ -16,6 +16,7 @@ public class Context {
     }
 
     public Context() {
+
         IMAGES_ROOT = "/images";
         BUTTON_IMAGES_ROOT = IMAGES_ROOT + "/button";
         musicDirectories = FXCollections.observableArrayList();
