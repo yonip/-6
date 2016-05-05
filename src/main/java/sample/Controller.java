@@ -6,6 +6,9 @@ import ddf.minim.analysis.BeatDetect;
 import ddf.minim.analysis.FFT;
 import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -16,12 +19,7 @@ import javafx.fxml.JavaFXBuilderFactory;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Button;
-import javafx.scene.control.ListView;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.Slider;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
@@ -32,6 +30,7 @@ import sample.util.ButtonImage;
 import sample.util.Context;
 
 import java.io.*;
+import java.time.Clock;
 import java.util.*;
 
 public class Controller {
@@ -41,10 +40,9 @@ public class Controller {
     @FXML
     private Pane canvasHolder;
     private Canvas canvas;
-    @FXML
-    private ListView list;
     private ObservableList<FileMeta> musicList;
-    private Map<Date, FileMeta> files;
+    private ObservableList<Integer> presList;
+    private Map<String, FileMeta> files;
 
     @FXML
     private Text songName;
@@ -66,6 +64,17 @@ public class Controller {
     private Slider soundvol;
     @FXML
     private ProgressBar soundprog;
+
+    @FXML
+    private TableView<Integer> songTable;
+    @FXML
+    private TableColumn<Integer, String> songTitleColumn;
+    @FXML
+    private TableColumn<Integer, String> songAuthorColumn;
+    @FXML
+    private TableColumn<Integer, String> songDurationColumn;
+    @FXML
+    private TableColumn<Integer, String> songAgeColumn;
 
     private ButtonImage playImgs;
     private ButtonImage pauseImgs;
@@ -109,11 +118,9 @@ public class Controller {
      */
     @FXML
     public void initialize() {
-
         System.out.println(canvasHolder.getHeight() + " " + canvasHolder.getWidth());
         files = new HashMap<>();
-        canvas = (Canvas)canvasHolder.getChildren().get(0);
-        System.out.println(canvas.getHeight() + " " + canvas.getWidth());
+        canvas = (Canvas) canvasHolder.getChildren().get(0);
         playPause.setText("");
         skip.setText("");
         rewind.setText("");
@@ -129,15 +136,46 @@ public class Controller {
         circlesNew=new ArrayList<Double>();
         speed = new ArrayList<Double>();
 
-        //media = new Media(getClass().getResource("/music/Billy Boyd - The Last Goodbye.mp3").toString());
-
         minim = new Minim(this);
         musicList = FXCollections.observableArrayList();
-        list.setItems(musicList);
+        presList = FXCollections.observableArrayList();
+        songTable.setItems(presList);
+        songTitleColumn.setCellValueFactory(param -> musicList.get(param.getValue()).title);
+        songAuthorColumn.setCellValueFactory(param -> musicList.get(param.getValue()).artist);
+        songAgeColumn.setCellValueFactory(param -> {
+            long secs = Clock.systemUTC().instant().getEpochSecond() - (musicList.get(param.getValue()).modTime.getTime() / 1000);
+            long mins = secs / 60;
+            long hrs = mins / 60;
+            long days = hrs / 24;
+            long weeks = days / 7;
+            long months = (long) (days / 30.42);
+            long years = months / 12;
+            String word;
+            long res;
+            if (years > 0) {
+                return new ReadOnlyStringWrapper(years + " year" + (years > 1 ? "s" : ""));
+            }
+            if (months > 0) {
+                return new ReadOnlyStringWrapper(months + " month" + (months > 1 ? "s" : ""));
+            }
+            if (weeks > 0) {
+                return new ReadOnlyStringWrapper(weeks + " week" + (weeks > 1 ? "s" : ""));
+            }
+            if (days > 0) {
+                return new ReadOnlyStringWrapper(days + " day" + (days > 1 ? "s" : ""));
+            }
+            if (hrs > 0) {
+                return new ReadOnlyStringWrapper(hrs + " hour" + (hrs > 1 ? "s" : ""));
+            }
+            if (mins > 0) {
+                return new ReadOnlyStringWrapper(mins + " minute" + (mins > 1 ? "s" : ""));
+            }
+            return new ReadOnlyStringWrapper("Just now");
+        });
+        songDurationColumn.setCellValueFactory(param -> new ReadOnlyStringWrapper(timeToText(musicList.get(param.getValue()).player.length(), true)));
         read();
         pos = 0;
         songName.setText(musicList.get(pos).fileName());
-        //player = minim.loadFile(musicList.get(0).filePath());
         fft = new FFT(player().bufferSize(), player().sampleRate());
         for (int i=0;i<player().bufferSize();i=i+10){
             circles.add(Math.random()*canvas.getWidth());
@@ -230,6 +268,8 @@ public class Controller {
                             }
                         }
 
+                }
+                gc.moveTo(0, height / 2);
 
 
                     }
@@ -336,7 +376,7 @@ public class Controller {
             }
         });
         soundvol.valueProperty().addListener((observable, oldValue, newValue) -> {
-            soundprog.setProgress((newValue.doubleValue()-soundvol.getMin()) / (soundvol.getMax()-soundvol.getMin()));
+            soundprog.setProgress((newValue.doubleValue() - soundvol.getMin()) / (soundvol.getMax() - soundvol.getMin()));
             player().setGain((float) newValue.doubleValue());
         });
         songtime.setMax(player().length());
@@ -345,15 +385,31 @@ public class Controller {
         soundvol.setMin(-80);
         soundvol.setValue(0);
         timer.start();
+        configurePlayer();
         player().pause();
     }
 
     private static String timeToText(int time) {
-        int hrs = time/HOUR;
-        int min = (time/MINUTE) % 60;
-        int sec = (time/SECOND) % 60;
+        return timeToText(time, false);
+    }
+
+    private static String timeToText(int time, boolean withMillis) {
+        int hrs = time / HOUR;
+        int min = (time / MINUTE) % 60;
+        int sec = (time / SECOND) % 60;
+        int milis = (time % SECOND);
         String t = ((hrs == 0) ? "" : hrs + ":");
         t += ((t.isEmpty() && min < 10) ? "0" : "") + min + ":" + ((sec < 10) ? "0" : "") + sec;
+        if (withMillis) {
+            String milisString = ".";
+            if (milis < 10) {
+                milisString += "0";
+            }
+            if (milis < 100) {
+                milisString += "0";
+            }
+            t += milisString + milis;
+        }
         return t;
     }
 
@@ -396,10 +452,9 @@ public class Controller {
     @FXML
     private void rewind(Event event) {
         if (pos > 0 && (player().position() == 0 || System.currentTimeMillis() - lastRewind < skipbackTimeout)) {
+            player().pause();
             pos--;
-            songtime.setMax(player().length());
-            songName.setText(musicList.get(pos).fileName());
-            playPause.setGraphic(playImgs.getImage());
+            configurePlayer();
         }
         lastRewind = System.currentTimeMillis();
         player().cue(0);
@@ -420,7 +475,9 @@ public class Controller {
 
     @FXML
     private void skip(Event event) {
-        player().cue(player().length());
+        player().pause();
+        pos++;
+        configurePlayer();
     }
 
     @FXML
@@ -435,7 +492,7 @@ public class Controller {
         Stage stage = new Stage();
         stage.setScene(new Scene(fxmlLoader.load()));
         stage.setAlwaysOnTop(true);
-        stage.setOnCloseRequest(event1 -> Platform.runLater(() -> read()));
+        stage.setOnCloseRequest(event1 -> Platform.runLater(this::read));
         stage.show();
     }
 
@@ -446,7 +503,8 @@ public class Controller {
         }
         File f;
         Date d;
-        Map<Date, FileMeta> holder = new HashMap();
+        String absPath;
+        Map<String, FileMeta> holder = new HashMap<>();
         while (!dirs.isEmpty()) {
             f = dirs.pop();
             if (!f.exists()) {
@@ -456,18 +514,19 @@ public class Controller {
                 dirs.addAll(Arrays.asList(f.listFiles()));
                 continue;
             }
-            if(f.isFile()) {
+            if (f.isFile()) {
                 String name = f.getName();
-                String ext = name.substring(name.lastIndexOf(".")+1);
+                String ext = name.substring(name.lastIndexOf(".") + 1);
                 for (String exten : Main.context.extensions) {
                     if (ext.equalsIgnoreCase(exten)) {
                         d = new Date(f.lastModified());
-                        if (files.get(d) == null) {
-                            holder.put(d, new FileMeta(f, minim));
-                        } else if (files.get(d).filePath.equals(f.getAbsolutePath())) {
-                            holder.put(d, files.get(d));
+                        absPath = f.getAbsolutePath();
+                        if (files.get(absPath) == null) {
+                            holder.put(absPath, new FileMeta(f, minim)); // oh look, you're new! welcome home! or something
+                        } else if (files.get(absPath).modTime.compareTo(d) < 0) { // ie the version we have is newer
+                            holder.put(absPath, files.get(absPath)); // keep the current version. dont even know how this would happen
                         } else {
-                            holder.put(d, new FileMeta(f, minim));
+                            holder.put(absPath, new FileMeta(f, minim)); // take the other version
                         }
                         break;
                     }
@@ -483,6 +542,10 @@ public class Controller {
         musicList.clear();
         musicList.addAll(files.values().toArray(new FileMeta[0]));
         musicList.sort(null);
+        presList.clear();
+        for (int i = 0; i < musicList.size(); i++) {
+            presList.add(i);
+        }
     }
 
     private void play() {
@@ -639,10 +702,10 @@ public class Controller {
         timer.stop();
     }
 
-    private class FileMeta implements Comparable<FileMeta> {
-        private String song;
-        private String artist;
-        private String album;
+    public class FileMeta implements Comparable<FileMeta> {
+        private StringProperty title;
+        private StringProperty artist;
+        private StringProperty album;
         private Date modTime;
         private String fileName;
         private String filePath;
@@ -654,29 +717,26 @@ public class Controller {
             filePath = file.getAbsolutePath();
             player = min.loadFile(filePath);
             fileName = name.substring(name.lastIndexOf("/") + 1, name.lastIndexOf(".mp3"));
+            //System.out.println(fileName);
             int ind = fileName.indexOf("-");
             int ind2 = ind + 1;
             if (ind < 0) {
                 ind = fileName.length();
                 ind2 = ind;
             }
-            artist = !player.getMetaData().author().isEmpty() ? player.getMetaData().author() : fileName.substring(0, ind).trim();
-            song = !player.getMetaData().title().isEmpty() ? player.getMetaData().title() : fileName.substring(ind2).trim();
+            artistProperty().set(!player.getMetaData().author().isEmpty() ? player.getMetaData().author() : fileName.substring(0, ind).trim());
+            titleProperty().set(!player.getMetaData().title().isEmpty() ? player.getMetaData().title() : fileName.substring(ind2).trim());
             modTime = new Date(file.lastModified());
             comparison = Context.Comparisons.SONG_NAME;
         }
 
         @Override
         public String toString() {
-            return (song.isEmpty() ? "" : song + " - ") + artist + " | " + modTime.toString();
+            return (titleProperty().getValueSafe().isEmpty() ? "" : title + " - ") + artist + " | " + modTime.toString();
         }
 
         public String fileName() {
-            return fileName;
-        }
-
-        public String filePath() {
-            return filePath;
+            return artist() + (!title().isEmpty() ? " - " + title() : "");
         }
 
         /**
@@ -721,15 +781,48 @@ public class Controller {
         public int compareTo(FileMeta o) {
             switch (comparison) {
                 case AUTHOR_NAME:
-                    return artist.compareTo(o.artist);
+                    return artist().compareTo(o.artist());
                 case SONG_NAME:
-                    return song.compareTo(o.song);
+                    return title().compareTo(o.title());
                 case SONG_LENGTH:
                     return player.length() - o.player.length();
                 case MOD_TIME:
                 default:
                     return modTime.compareTo(o.modTime);
             }
+        }
+
+        public StringProperty titleProperty() {
+            if (title == null) {
+                title = new SimpleStringProperty(this, "title");
+            }
+            return title;
+        }
+
+        public StringProperty artistProperty() {
+            if (artist == null) {
+                artist = new SimpleStringProperty(this, "artist");
+            }
+            return artist;
+        }
+
+        public StringProperty albumProperty() {
+            if (album == null) {
+                album = new SimpleStringProperty(this, "album");
+            }
+            return album;
+        }
+
+        public String title() {
+            return titleProperty().getValueSafe();
+        }
+
+        public String artist() {
+            return artistProperty().getValueSafe();
+        }
+
+        public String album() {
+            return albumProperty().getValueSafe();
         }
     }
 
@@ -738,5 +831,17 @@ public class Controller {
             throw new IllegalStateException("y u no hev songs in folder");
         }
         return musicList.get(pos).player;
+    }
+
+    /**
+     * use this method when after changing to a different player (ie pos++, pos--, or pos = something). Will make sure sliders and volume and such is correct.
+     * also cues the current player to 0.
+     */
+    private void configurePlayer() {
+        songtime.setMax(player().length());
+        songName.setText(musicList.get(pos).fileName());
+        songTable.getSelectionModel().select(new Integer(pos));
+        player().setGain((float) soundvol.getValue());
+        player().cue(0);
     }
 }
