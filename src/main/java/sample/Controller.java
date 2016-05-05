@@ -41,7 +41,7 @@ public class Controller {
     private Canvas canvas;
     private ObservableList<FileMeta> musicList;
     private ObservableList<Integer> presList;
-    private Map<Date, FileMeta> files;
+    private Map<String, FileMeta> files;
 
     @FXML
     private Text songName;
@@ -101,7 +101,7 @@ public class Controller {
     @FXML
     public void initialize() {
         files = new HashMap<>();
-        canvas = (Canvas)canvasHolder.getChildren().get(0);
+        canvas = (Canvas) canvasHolder.getChildren().get(0);
         playPause.setText("");
         skip.setText("");
         rewind.setText("");
@@ -121,42 +121,36 @@ public class Controller {
         songTitleColumn.setCellValueFactory(param -> musicList.get(param.getValue()).title);
         songAuthorColumn.setCellValueFactory(param -> musicList.get(param.getValue()).artist);
         songAgeColumn.setCellValueFactory(param -> {
-            long secs = Clock.systemUTC().instant().getEpochSecond() - (musicList.get(param.getValue()).modTime.getTime()/1000);
-            long mins = secs/60;
-            long hrs = mins/60;
-            long days = hrs/24;
-            long weeks = days/7;
-            long months = (long) (days/30.42);
-            long years = months/12;
+            long secs = Clock.systemUTC().instant().getEpochSecond() - (musicList.get(param.getValue()).modTime.getTime() / 1000);
+            long mins = secs / 60;
+            long hrs = mins / 60;
+            long days = hrs / 24;
+            long weeks = days / 7;
+            long months = (long) (days / 30.42);
+            long years = months / 12;
             String word;
             long res;
             if (years > 0) {
-                res = years;
-                word = "year";
-            } else if (months > 0) {
-                res = months;
-                word = "month";
-            } else if (weeks > 0) {
-                res = weeks;
-                word = "week";
-            } else if (days > 0) {
-                res = days;
-                word = "day";
-            } else if (hrs > 0) {
-                res = hrs;
-                word = "hour";
-            } else if (mins > 0) {
-                res = mins;
-                word = "minute";
-            } else {
-                res = -1;
-                word = "Just now";
+                return new ReadOnlyStringWrapper(years + " year" + (years > 1 ? "s" : ""));
             }
-            word += res > 1 ? "s" : ""; // plurals
-            word = (res > 0 ? res + " " : "") + word; // make sure "Just now" doesn't have time appended;
-            return new ReadOnlyStringWrapper(word);
+            if (months > 0) {
+                return new ReadOnlyStringWrapper(months + " month" + (months > 1 ? "s" : ""));
+            }
+            if (weeks > 0) {
+                return new ReadOnlyStringWrapper(weeks + " week" + (weeks > 1 ? "s" : ""));
+            }
+            if (days > 0) {
+                return new ReadOnlyStringWrapper(days + " day" + (days > 1 ? "s" : ""));
+            }
+            if (hrs > 0) {
+                return new ReadOnlyStringWrapper(hrs + " hour" + (hrs > 1 ? "s" : ""));
+            }
+            if (mins > 0) {
+                return new ReadOnlyStringWrapper(mins + " minute" + (mins > 1 ? "s" : ""));
+            }
+            return new ReadOnlyStringWrapper("Just now");
         });
-        songDurationColumn.setCellValueFactory(param -> new ReadOnlyStringWrapper(timeToText(musicList.get(param.getValue()).player.length()) + "." + musicList.get(param.getValue()).player.length() % 1000));
+        songDurationColumn.setCellValueFactory(param -> new ReadOnlyStringWrapper(timeToText(musicList.get(param.getValue()).player.length(), true)));
         read();
         pos = 0;
         songName.setText(musicList.get(pos).fileName());
@@ -174,16 +168,14 @@ public class Controller {
             public void handle(long now) {
                 // make sure sliders and text are updated
                 songtime.setValue(player().position());
-                time.setText(timeToText(player().position()));
+                time.setText(timeToText(player().position(), true) + "/" + timeToText(player().length(), true));
                 if (!player().isPlaying() && playing) {
                     play();
                 }
-                if (player().position() == player().length()) {
+                if (player().position() >= player().length()-750) { // cri. i need to figure out why it doesn't get to the end
                     Platform.runLater(() -> {
                         pos++;
-                        songtime.setMax(player().length());
-                        songName.setText(musicList.get(pos).fileName());
-                        player().cue(0);
+                        configurePlayer();
                     });
                 }
                 // now to drawing things
@@ -200,75 +192,73 @@ public class Controller {
                 //gc.fill();
                 //gc.moveTo(0, height/2);
                 double polarR = 100;
-                double polarTheta=0;
-                double polarR2 =100;
+                double polarTheta = 0;
+                double polarR2 = 100;
                 double polarTheta2 = 0;
                 double left = 0;
                 double left2 = 0;
-                for(int i = 0; i < player().bufferSize(); i=i+(int)(10-Math.abs(Math.random()*8)))
-                {
-                    left = (height/2 + player().left.get(i) * height/2);
+                for (int i = 0; i < player().bufferSize(); i = i + (int) (10 - Math.abs(Math.random() * 8))) {
+                    left = (height / 2 + player().left.get(i) * height / 2);
                     //gc.lineTo(width * ((double)i)/player().bufferSize(), left);
                     //polarR=Math.abs(Math.sin(player().position() / 10000000.0)) + (double)left/5.0;
 
                     //outside radius
-                    polarR = 20*Math.abs(Math.cos(player().position()/1000.0)) + left/2.0;
-                    polarTheta = (double)(i+now/100000000.0)/((double)player().bufferSize())*Math.PI*2;
+                    polarR = 20 * Math.abs(Math.cos(player().position() / 1000.0)) + left / 2.0;
+                    polarTheta = (double) (i + now / 100000000.0) / ((double) player().bufferSize()) * Math.PI * 2;
                     //gc.lineTo(polarR*Math.cos(polarTheta)+width/2,polarR*Math.sin(polarTheta)+height/2);
                     //System.out.print(left + " ");
                     //gc.lineTo(width * ((double)i)/player().bufferSize(), left);
 
-                    if (i<player().bufferSize()){
-                        for (int m=80;m<101;m=m+20) {
+                    if (i < player().bufferSize()) {
+                        for (int m = 80; m < 101; m = m + 20) {
                             //y values
-                            left2 = (canvas.getHeight() / 2 + player().left.get((i + m)%player().bufferSize()) * canvas.getHeight() / 2);
-                            left2 = Math.log(left2)+height/2;
+                            left2 = (canvas.getHeight() / 2 + player().left.get((i + m) % player().bufferSize()) * canvas.getHeight() / 2);
+                            left2 = Math.log(left2) + height / 2;
 
                             //converting to polar
-                            polarR2 = 40*(Math.abs(Math.cos(now/100000000000.0)))+left2/2.0;
+                            polarR2 = 40 * (Math.abs(Math.cos(now / 100000000000.0))) + left2 / 2.0;
                             //polarR2 =  left2 / 5.0;
 
-                            polarTheta2 = (double) (i + m+player().position()/100000.0) / ((double) player().bufferSize()) * Math.PI * 2;
+                            polarTheta2 = (double) (i + m + player().position() / 100000.0) / ((double) player().bufferSize()) * Math.PI * 2;
 
                             //color and drawing the line
-                            gc.setStroke(new Color(Math.abs(Math.cos(player().position()/100000.0)), Math.abs(Math.sin(player().position()/5000000.0)), Math.abs(Math.cos(now/60000000000.0)), 0.2));
+                            gc.setStroke(new Color(Math.abs(Math.cos(player().position() / 100000.0)), Math.abs(Math.sin(player().position() / 5000000.0)), Math.abs(Math.cos(now / 60000000000.0)), 0.2));
                             gc.strokeLine(polarR * Math.cos(polarTheta) + width / 2, polarR * Math.sin(polarTheta) + height / 2, polarR2 * Math.cos(polarTheta2) + width / 2, polarR2 * Math.sin(polarTheta2) + height / 2);
                         }
                     }
 
                 }
-                gc.moveTo(0, height/2);
+                gc.moveTo(0, height / 2);
 
 
                 //Some cool setups:
                 //right = height/2 + player().right.get(i)*height/2
                 //inside for loop, right2 = Math.log(right2)+height/2
-                double right2=0;
-                double extraX=0;
-                double extraY=0;
-                double extraY2=0;
-                double xValue=0;
-                double xValueNext=0;
-                double zoom=0;
-                for(int i = 0; i < player().bufferSize(); i=i+10)
-                {
-                    right = height/2 + player().right.get(i) * height/2;
-                    right = right -200;
+                double right2 = 0;
+                double extraX = 0;
+                double extraY = 0;
+                double extraY2 = 0;
+                double xValue = 0;
+                double xValueNext = 0;
+                double zoom = 0;
+                for (int i = 0; i < player().bufferSize(); i = i + 10) {
+                    right = height / 2 + player().right.get(i) * height / 2;
+                    right = right - 200;
                     //right = Math.sqrt(right)+height/2;
                     //gc.lineTo(width * ((double)i)/player().bufferSize(), right);
-                    gc.strokeLine(width*(double)i/player().bufferSize(),right/2.0+height/2,width*(double)i/player().bufferSize(),height/2-right/2.0);
-                    int forLoop = (int)(80*Math.abs(Math.sin(player().position()/10000.0)));
+                    gc.strokeLine(width * (double) i / player().bufferSize(), right / 2.0 + height / 2, width * (double) i / player().bufferSize(), height / 2 - right / 2.0);
+                    int forLoop = (int) (80 * Math.abs(Math.sin(player().position() / 10000.0)));
                     /**
-                    for (int m=forLoop;m<forLoop+2;m=m+20){
-                        right2 = height/2 + player().right.get(i+m) * height/2;
-                        xValue = canvas.getWidth()*((double)i)/player().bufferSize();
-                        xValueNext = canvas.getWidth()* ((double)(i+m))/player().bufferSize();
-                        right2 = Math.log(right2+30*Math.random())+height/2;
-                        //gc.setStroke(new Color(0.25,0.4,0.72,1-m/100.0));
-                        gc.setStroke(new Color(Math.abs((double)Math.sin(player().position()/40000.0)),Math.abs(Math.sin(0.4-(player().position()/20000.0))),0.7,0.5));
-                        zoom = 3*Math.sin(player().position()/10000.0);
-                        //gc.strokeLine((xValue-width/2)*zoom+width/2,(right-height/2.0)*zoom+height/2, (xValueNext-width/2)*zoom+width/2,(right2-height/2)*zoom+height/2);
-                    } **/
+                     for (int m=forLoop;m<forLoop+2;m=m+20){
+                     right2 = height/2 + player().right.get(i+m) * height/2;
+                     xValue = canvas.getWidth()*((double)i)/player().bufferSize();
+                     xValueNext = canvas.getWidth()* ((double)(i+m))/player().bufferSize();
+                     right2 = Math.log(right2+30*Math.random())+height/2;
+                     //gc.setStroke(new Color(0.25,0.4,0.72,1-m/100.0));
+                     gc.setStroke(new Color(Math.abs((double)Math.sin(player().position()/40000.0)),Math.abs(Math.sin(0.4-(player().position()/20000.0))),0.7,0.5));
+                     zoom = 3*Math.sin(player().position()/10000.0);
+                     //gc.strokeLine((xValue-width/2)*zoom+width/2,(right-height/2.0)*zoom+height/2, (xValueNext-width/2)*zoom+width/2,(right2-height/2)*zoom+height/2);
+                     } **/
                 }
                 //System.out.println();
                 //gc.closePath();
@@ -276,11 +266,11 @@ public class Controller {
                 fft.forward(player().mix);
                 gc.setFill(Color.color(1, 0, 0, 0.5));
                 gc.setFill(Color.DARKBLUE);
-                for(int i = 0; i < ln; i++) {
+                for (int i = 0; i < ln; i++) {
                     band = fft.getBand(i);
-                    for (int dots=0;dots<band*1.5;dots=dots + 5){
-                        gc.setFill(new Color((double)(i/ln),0.74,0.9,0.5));
-                        gc.fillOval(i*(width/ln),height-dots,2.5,2.5);
+                    for (int dots = 0; dots < band * 1.5; dots = dots + 5) {
+                        gc.setFill(new Color((double) (i / ln), 0.74, 0.9, 0.5));
+                        gc.fillOval(i * (width / ln), height - dots, 2.5, 2.5);
                     }
                     //gc.fillRect(i * (width/ln), 0, (width/ln), band);
                 }
@@ -301,7 +291,7 @@ public class Controller {
             }
         });
         soundvol.valueProperty().addListener((observable, oldValue, newValue) -> {
-            soundprog.setProgress((newValue.doubleValue()-soundvol.getMin()) / (soundvol.getMax()-soundvol.getMin()));
+            soundprog.setProgress((newValue.doubleValue() - soundvol.getMin()) / (soundvol.getMax() - soundvol.getMin()));
             player().setGain((float) newValue.doubleValue());
         });
         songtime.setMax(player().length());
@@ -310,15 +300,31 @@ public class Controller {
         soundvol.setMin(-80);
         soundvol.setValue(0);
         timer.start();
+        configurePlayer();
         player().pause();
     }
 
     private static String timeToText(int time) {
-        int hrs = time/HOUR;
-        int min = (time/MINUTE) % 60;
-        int sec = (time/SECOND) % 60;
+        return timeToText(time, false);
+    }
+
+    private static String timeToText(int time, boolean withMillis) {
+        int hrs = time / HOUR;
+        int min = (time / MINUTE) % 60;
+        int sec = (time / SECOND) % 60;
+        int milis = (time % SECOND);
         String t = ((hrs == 0) ? "" : hrs + ":");
         t += ((t.isEmpty() && min < 10) ? "0" : "") + min + ":" + ((sec < 10) ? "0" : "") + sec;
+        if (withMillis) {
+            String milisString = ".";
+            if (milis < 10) {
+                milisString += "0";
+            }
+            if (milis < 100) {
+                milisString += "0";
+            }
+            t += milisString + milis;
+        }
         return t;
     }
 
@@ -363,8 +369,7 @@ public class Controller {
         if (pos > 0 && (player().position() == 0 || System.currentTimeMillis() - lastRewind < skipbackTimeout)) {
             player().pause();
             pos--;
-            songtime.setMax(player().length());
-            songName.setText(musicList.get(pos).fileName());
+            configurePlayer();
         }
         lastRewind = System.currentTimeMillis();
         player().cue(0);
@@ -387,9 +392,7 @@ public class Controller {
     private void skip(Event event) {
         player().pause();
         pos++;
-        songtime.setMax(player().length());
-        songName.setText(musicList.get(pos).fileName());
-        player().cue(0);
+        configurePlayer();
     }
 
     @FXML
@@ -415,7 +418,8 @@ public class Controller {
         }
         File f;
         Date d;
-        Map<Date, FileMeta> holder = new HashMap<>();
+        String absPath;
+        Map<String, FileMeta> holder = new HashMap<>();
         while (!dirs.isEmpty()) {
             f = dirs.pop();
             if (!f.exists()) {
@@ -425,18 +429,19 @@ public class Controller {
                 dirs.addAll(Arrays.asList(f.listFiles()));
                 continue;
             }
-            if(f.isFile()) {
+            if (f.isFile()) {
                 String name = f.getName();
-                String ext = name.substring(name.lastIndexOf(".")+1);
+                String ext = name.substring(name.lastIndexOf(".") + 1);
                 for (String exten : Main.context.extensions) {
                     if (ext.equalsIgnoreCase(exten)) {
                         d = new Date(f.lastModified());
-                        if (files.get(d) == null) {
-                            holder.put(d, new FileMeta(f, minim));
-                        } else if (files.get(d).filePath.equals(f.getAbsolutePath())) {
-                            holder.put(d, files.get(d));
+                        absPath = f.getAbsolutePath();
+                        if (files.get(absPath) == null) {
+                            holder.put(absPath, new FileMeta(f, minim)); // oh look, you're new! welcome home! or something
+                        } else if (files.get(absPath).modTime.compareTo(d) < 0) { // ie the version we have is newer
+                            holder.put(absPath, files.get(absPath)); // keep the current version. dont even know how this would happen
                         } else {
-                            holder.put(d, new FileMeta(f, minim));
+                            holder.put(absPath, new FileMeta(f, minim)); // take the other version
                         }
                         break;
                     }
@@ -495,6 +500,7 @@ public class Controller {
             filePath = file.getAbsolutePath();
             player = min.loadFile(filePath);
             fileName = name.substring(name.lastIndexOf("/") + 1, name.lastIndexOf(".mp3"));
+            //System.out.println(fileName);
             int ind = fileName.indexOf("-");
             int ind2 = ind + 1;
             if (ind < 0) {
@@ -513,11 +519,7 @@ public class Controller {
         }
 
         public String fileName() {
-            return fileName;
-        }
-
-        public String filePath() {
-            return filePath;
+            return artist() + (!title().isEmpty() ? " - " + title() : "");
         }
 
         /**
@@ -612,5 +614,17 @@ public class Controller {
             throw new IllegalStateException("y u no hev songs in folder");
         }
         return musicList.get(pos).player;
+    }
+
+    /**
+     * use this method when after changing to a different player (ie pos++, pos--, or pos = something). Will make sure sliders and volume and such is correct.
+     * also cues the current player to 0.
+     */
+    private void configurePlayer() {
+        songtime.setMax(player().length());
+        songName.setText(musicList.get(pos).fileName());
+        songTable.getSelectionModel().select(new Integer(pos));
+        player().setGain((float) soundvol.getValue());
+        player().cue(0);
     }
 }
