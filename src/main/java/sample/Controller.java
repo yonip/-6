@@ -265,7 +265,7 @@ public class Controller {
 
                 }
                 gc.moveTo(0, height / 2);
-                */
+
 
                     }
                     double right=0;
@@ -277,8 +277,8 @@ public class Controller {
                         //gc.lineTo(width * ((double)i)/player().bufferSize(), right);
                         gc.strokeLine(width*(double)i/player().bufferSize(),right/2.0+height/2,width*(double)i/player().bufferSize(),height/2-right/2.0);
 
-                    }
-                    */
+                    } */
+
 
                     //bigCircle(now,gc, height, width);
 
