@@ -32,6 +32,7 @@ import java.io.*;
 import java.time.Clock;
 import java.util.*;
 
+@SuppressWarnings("unused")
 public class Controller {
     @FXML
     private VBox information;
@@ -90,9 +91,9 @@ public class Controller {
     private long lastRewind;
     private long skipbackTimeout = 250;
 
-    public static final int SECOND = 1000;
-    public static final int MINUTE = 60 * SECOND;
-    public static final int HOUR = 60 * MINUTE;
+    private static final int SECOND = 1000;
+    private static final int MINUTE = 60 * SECOND;
+    private static final int HOUR = 60 * MINUTE;
 
     /**
      * Called to initialize a controller after its root element has been
@@ -150,10 +151,10 @@ public class Controller {
             }
             return new ReadOnlyStringWrapper("Just now");
         });
-        songDurationColumn.setCellValueFactory(param -> new ReadOnlyStringWrapper(timeToText(musicList.get(param.getValue()).player.length(), true)));
+        songDurationColumn.setCellValueFactory(param -> new ReadOnlyStringWrapper(timeToText(musicList.get(param.getValue()).length, true)));
         read();
         pos = 0;
-        songName.setText(musicList.get(pos).fileName());
+        configurePlayer(pos);
         fft = new FFT(player().bufferSize(), player().sampleRate());
         timer = new AnimationTimer() {
             GraphicsContext gc;
@@ -164,6 +165,7 @@ public class Controller {
             double band;
             int ln = 40;
 
+            @SuppressWarnings("UnusedAssignment")
             @Override
             public void handle(long now) {
                 // make sure sliders and text are updated
@@ -172,11 +174,8 @@ public class Controller {
                 if (!player().isPlaying() && playing) {
                     play();
                 }
-                if (player().position() >= player().length()-750) { // cri. i need to figure out why it doesn't get to the end
-                    Platform.runLater(() -> {
-                        pos++;
-                        configurePlayer();
-                    });
+                if (player().position() >= player().length()-1000) { // cri. i need to figure out why it doesn't get to the end
+                    Platform.runLater(() -> configurePlayer(pos + 1));
                 }
                 // now to drawing things
                 gc = canvas.getGraphicsContext2D();
@@ -300,7 +299,6 @@ public class Controller {
         soundvol.setMin(-80);
         soundvol.setValue(0);
         timer.start();
-        configurePlayer();
         player().pause();
     }
 
@@ -368,8 +366,7 @@ public class Controller {
     private void rewind(Event event) {
         if (pos > 0 && (player().position() == 0 || System.currentTimeMillis() - lastRewind < skipbackTimeout)) {
             player().pause();
-            pos--;
-            configurePlayer();
+            configurePlayer(pos - 1);
         }
         lastRewind = System.currentTimeMillis();
         player().cue(0);
@@ -391,8 +388,7 @@ public class Controller {
     @FXML
     private void skip(Event event) {
         player().pause();
-        pos++;
-        configurePlayer();
+        configurePlayer(pos + 1);
     }
 
     @FXML
@@ -412,6 +408,7 @@ public class Controller {
     }
 
     private void read() {
+        System.out.println("read start");
         Stack<File> dirs = new Stack<>();
         for (String path : Main.context.musicDirectories) {
             dirs.push(new File(path));
@@ -426,6 +423,7 @@ public class Controller {
                 continue;
             }
             if (f.isDirectory()) {
+                //noinspection ConstantConditions
                 dirs.addAll(Arrays.asList(f.listFiles()));
                 continue;
             }
@@ -450,7 +448,7 @@ public class Controller {
         }
         files.values().forEach(v -> {
             if (!holder.containsValue(v)) {
-                v.player.close();
+                v.close();
             }
         });
         files = holder;
@@ -461,6 +459,7 @@ public class Controller {
         for (int i = 0; i < musicList.size(); i++) {
             presList.add(i);
         }
+        System.out.println("read end");
     }
 
     private void play() {
@@ -478,9 +477,7 @@ public class Controller {
     }
 
     public void stop() {
-        for (FileMeta f : musicList) {
-            f.player.close();
-        }
+        musicList.forEach(FileMeta::close);
         minim.stop();
         timer.stop();
     }
@@ -489,13 +486,16 @@ public class Controller {
         private StringProperty title;
         private StringProperty artist;
         private StringProperty album;
+        private int length;
         private Date modTime;
         private String fileName;
-        private String filePath;
+        private final String filePath;
         private AudioPlayer player;
         private Context.Comparisons comparison;
+        private Minim min;
 
         public FileMeta(File file, Minim min) {
+            this.min = min;
             String name = file.getName();
             filePath = file.getAbsolutePath();
             player = min.loadFile(filePath);
@@ -511,6 +511,8 @@ public class Controller {
             titleProperty().set(!player.getMetaData().title().isEmpty() ? player.getMetaData().title() : fileName.substring(ind2).trim());
             modTime = new Date(file.lastModified());
             comparison = Context.Comparisons.SONG_NAME;
+            length = player.length();
+            close();
         }
 
         @Override
@@ -568,7 +570,7 @@ public class Controller {
                 case SONG_NAME:
                     return title().compareTo(o.title());
                 case SONG_LENGTH:
-                    return player.length() - o.player.length();
+                    return length - o.length;
                 case MOD_TIME:
                 default:
                     return modTime.compareTo(o.modTime);
@@ -607,20 +609,38 @@ public class Controller {
         public String album() {
             return albumProperty().getValueSafe();
         }
+
+        public AudioPlayer player() {
+            if (player == null) {
+                player = min.loadFile(filePath);
+            }
+            return player;
+        }
+
+        public void close() {
+            if (player != null) {
+                player.close();
+                player = null;
+            }
+        }
     }
 
     private AudioPlayer player() {
         if (musicList.size() == 0) {
             throw new IllegalStateException("y u no hev songs in folder");
         }
-        return musicList.get(pos).player;
+        return musicList.get(pos).player();
     }
 
     /**
      * use this method when after changing to a different player (ie pos++, pos--, or pos = something). Will make sure sliders and volume and such is correct.
      * also cues the current player to 0.
      */
-    private void configurePlayer() {
+    private void configurePlayer(int newPos) {
+        if (newPos != pos) {
+            musicList.get(pos).close();
+            pos = newPos;
+        }
         songtime.setMax(player().length());
         songName.setText(musicList.get(pos).fileName());
         songTable.getSelectionModel().select(new Integer(pos));
