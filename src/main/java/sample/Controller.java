@@ -94,6 +94,8 @@ public class Controller {
     private ArrayList<Double> circles=null;
     private ArrayList<Double> circlesNew = null;
     private ArrayList<Double> speed=null;
+    private ArrayList<Double> disks = null;
+
     private int amountSkip=10;
     private double tall = 1.4;
     double addedFactor =0;
@@ -177,12 +179,18 @@ public class Controller {
         pos = 0;
         songName.setText(musicList.get(pos).fileName());
         fft = new FFT(player().bufferSize(), player().sampleRate());
+
         for (int i=0;i<player().bufferSize();i=i+10){
             circles.add(Math.random()*canvas.getWidth());
             circles.add(Math.random()*canvas.getHeight());
             speed.add(Math.random()*0.5);
+
+        }
+        for (int i=0;i<circles.size();i++){
+
         }
         circlesNew.addAll(circles);
+
         beat = new BeatDetect(player().bufferSize(),player().sampleRate());
         timer = new AnimationTimer() {
             GraphicsContext gc;
@@ -312,18 +320,16 @@ public class Controller {
                     for(int squareX=(int)(width/4.0);squareX<width*3/4;squareX=squareX+30){
                         for (int squareY=(int)(height/4.0);squareY<height*3/4;squareY=squareY+30){
                             gc.fillRoundRect(squareX,squareY,15,15,5,5);
-
-                            if (beat.isSnare()){
-                                for(int determX=(int)(width/4+30*(int)(Math.random()*7));determX<width*3/4;determX=determX+30){
-                                    for(int determY=(int)(height/4+30*(int)(Math.random()*7));determY<height*3/4;determY=determY+30){
-                                        gc.setFill(Color.CRIMSON);
-                                        gc.fillRoundRect(squareX,squareY,15,15,5,5);
-                                    }
-                                }
+                            if (Math.random()> 0.4 && beat.isSnare()){
+                                gc.setFill(Color.CRIMSON);
+                            }
+                            else{
+                                gc.setFill(Color.AQUAMARINE);
                             }
 
                         }
                     } */
+
 
                     //gc.setStroke(Color.WHITE);
                     //gc.strokeLine(0,height/2+height*0.4,width,height/2-height*0.4);
