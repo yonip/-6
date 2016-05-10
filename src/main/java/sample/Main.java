@@ -18,7 +18,7 @@ public class Main extends Application {
         //primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/package/macosx/μ6.icns")));
         fxmlLoader = new FXMLLoader(getClass().getResource("/fxml/main.fxml"), null, new JavaFXBuilderFactory(), null);
         primaryStage.setScene(new Scene(fxmlLoader.load()));
-        primaryStage.setTitle("μ6");
+        primaryStage.setTitle("\u03bc6");
         primaryStage.show();
     }
 

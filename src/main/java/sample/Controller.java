@@ -33,6 +33,7 @@ import java.io.*;
 import java.time.Clock;
 import java.util.*;
 
+@SuppressWarnings("unused")
 public class Controller {
     @FXML
     private VBox information;
@@ -120,7 +121,6 @@ public class Controller {
      */
     @FXML
     public void initialize() {
-        System.out.println(canvasHolder.getHeight() + " " + canvasHolder.getWidth());
         files = new HashMap<>();
         canvas = (Canvas) canvasHolder.getChildren().get(0);
         playPause.setText("");
@@ -174,10 +174,10 @@ public class Controller {
             }
             return new ReadOnlyStringWrapper("Just now");
         });
-        songDurationColumn.setCellValueFactory(param -> new ReadOnlyStringWrapper(timeToText(musicList.get(param.getValue()).player.length(), true)));
+        songDurationColumn.setCellValueFactory(param -> new ReadOnlyStringWrapper(timeToText(musicList.get(param.getValue()).length, true)));
         read();
         pos = 0;
-        songName.setText(musicList.get(pos).fileName());
+        configurePlayer(pos);
         fft = new FFT(player().bufferSize(), player().sampleRate());
 
         for (int i=0;i<player().bufferSize();i=i+10){
@@ -201,55 +201,42 @@ public class Controller {
             double band;
             int ln = 100;
 
+            @SuppressWarnings("UnusedAssignment")
             @Override
             public void handle(long now) {
-                    // make sure sliders and text are updated
-                    songtime.setValue(player().position());
-                    time.setText(timeToText(player().position()));
-                    if (!player().isPlaying() && playing) {
-                        play();
-                    }
-                    if (player().position() == player().length()) {
-                        Platform.runLater(() -> {
-                            pos++;
-                            songtime.setMax(player().length());
-                            songName.setText(musicList.get(pos).fileName());
-                            playPause.setGraphic(playImgs.getImage());
-                            player().cue(0);
-                        });
-                    }
-                    // now to drawing things
-                    gc = canvas.getGraphicsContext2D();
-                    width = canvas.getWidth();
-                    height = canvas.getHeight();
-                    gc.setStroke(Color.BLACK);
-                    //gc.setFill(Color.gray(1)); ORIGINAL
-                    gc.setFill(Color.BLACK);
-                    gc.fillRect(0, 0, width, height);
-                    gc.setFill(Color.gray(0.2));
-                    gc.fillRect(0, height, width * (player().position() / (double) (player().length())), height - 2);
-                    gc.beginPath();
-
-
-
-                    //gc.fill();
-                    //gc.moveTo(0, height/2);
-
-                    /*
-
-
-                    double polarR = 100;
-                    double polarTheta=0;
-                    double polarR2 =100;
-                    double polarTheta2 = 0;
-                    double left = 0;
-                    double left2 = 0;
-
-                    for(int i = 0; i < player().bufferSize(); i=i+(int)(10-Math.abs(Math.random()*8)))
-                    {
-                        left = (height/2 + player().left.get(i) * height/2);
-                        //gc.lineTo(width * ((double)i)/player().bufferSize(), left);
-                        //polarR=Math.abs(Math.sin(player().position() / 10000000.0)) + (double)left/5.0;
+                // make sure sliders and text are updated
+                songtime.setValue(player().position());
+                time.setText(timeToText(player().position(), true) + "/" + timeToText(player().length(), true));
+                if (!player().isPlaying() && playing) {
+                    play();
+                }
+                if (player().position() >= player().length()-1000) { // cri. i need to figure out why it doesn't get to the end
+                    Platform.runLater(() -> configurePlayer(pos + 1));
+                }
+                // now to drawing things
+                gc = canvas.getGraphicsContext2D();
+                width = canvas.getWidth();
+                height = canvas.getHeight();
+                gc.setStroke(Color.BLACK);
+                //gc.setFill(Color.gray(1)); ORIGINAL
+                gc.setFill(Color.BLACK);
+                gc.fillRect(0, 0, width, height);
+                gc.setFill(Color.gray(0.2));
+                gc.fillRect(0, height, width * (player().position() / (double) (player().length())), height - 2);
+                gc.beginPath();
+                //gc.fill();
+                //gc.moveTo(0, height/2);
+                /*
+                double polarR = 100;
+                double polarTheta = 0;
+                double polarR2 = 100;
+                double polarTheta2 = 0;
+                double left = 0;
+                double left2 = 0;
+                for (int i = 0; i < player().bufferSize(); i = i + (int) (10 - Math.abs(Math.random() * 8))) {
+                    left = (height / 2 + player().left.get(i) * height / 2);
+                    //gc.lineTo(width * ((double)i)/player().bufferSize(), left);
+                    //polarR=Math.abs(Math.sin(player().position() / 10000000.0)) + (double)left/5.0;
 
                         //outside radius
                         polarR = 20*Math.abs(Math.cos(player().position()/1000.0)) + left/2.0;
@@ -278,7 +265,7 @@ public class Controller {
 
                 }
                 gc.moveTo(0, height / 2);
-
+                */
 
                     }
                     double right=0;
@@ -391,7 +378,6 @@ public class Controller {
         soundvol.setMin(-80);
         soundvol.setValue(0);
         timer.start();
-        configurePlayer();
         player().pause();
     }
 
@@ -459,8 +445,7 @@ public class Controller {
     private void rewind(Event event) {
         if (pos > 0 && (player().position() == 0 || System.currentTimeMillis() - lastRewind < skipbackTimeout)) {
             player().pause();
-            pos--;
-            configurePlayer();
+            configurePlayer(pos - 1);
         }
         lastRewind = System.currentTimeMillis();
         player().cue(0);
@@ -482,8 +467,7 @@ public class Controller {
     @FXML
     private void skip(Event event) {
         player().pause();
-        pos++;
-        configurePlayer();
+        configurePlayer(pos + 1);
     }
 
     @FXML
@@ -503,6 +487,7 @@ public class Controller {
     }
 
     private void read() {
+        System.out.println("read start");
         Stack<File> dirs = new Stack<>();
         for (String path : Main.context.musicDirectories) {
             dirs.push(new File(path));
@@ -517,6 +502,7 @@ public class Controller {
                 continue;
             }
             if (f.isDirectory()) {
+                //noinspection ConstantConditions
                 dirs.addAll(Arrays.asList(f.listFiles()));
                 continue;
             }
@@ -541,7 +527,7 @@ public class Controller {
         }
         files.values().forEach(v -> {
             if (!holder.containsValue(v)) {
-                v.player.close();
+                v.close();
             }
         });
         files = holder;
@@ -552,6 +538,7 @@ public class Controller {
         for (int i = 0; i < musicList.size(); i++) {
             presList.add(i);
         }
+        System.out.println("read end");
     }
 
     private void play() {
@@ -701,9 +688,7 @@ public class Controller {
     }
 
     public void stop() {
-        for (FileMeta f : musicList) {
-            f.player.close();
-        }
+        musicList.forEach(FileMeta::close);
         minim.stop();
         timer.stop();
     }
@@ -712,13 +697,16 @@ public class Controller {
         private StringProperty title;
         private StringProperty artist;
         private StringProperty album;
+        private int length;
         private Date modTime;
         private String fileName;
-        private String filePath;
+        private final String filePath;
         private AudioPlayer player;
         private Context.Comparisons comparison;
+        private Minim min;
 
         public FileMeta(File file, Minim min) {
+            this.min = min;
             String name = file.getName();
             filePath = file.getAbsolutePath();
             player = min.loadFile(filePath);
@@ -734,6 +722,8 @@ public class Controller {
             titleProperty().set(!player.getMetaData().title().isEmpty() ? player.getMetaData().title() : fileName.substring(ind2).trim());
             modTime = new Date(file.lastModified());
             comparison = Context.Comparisons.SONG_NAME;
+            length = player.length();
+            close();
         }
 
         @Override
@@ -791,7 +781,7 @@ public class Controller {
                 case SONG_NAME:
                     return title().compareTo(o.title());
                 case SONG_LENGTH:
-                    return player.length() - o.player.length();
+                    return length - o.length;
                 case MOD_TIME:
                 default:
                     return modTime.compareTo(o.modTime);
@@ -830,20 +820,38 @@ public class Controller {
         public String album() {
             return albumProperty().getValueSafe();
         }
+
+        public AudioPlayer player() {
+            if (player == null) {
+                player = min.loadFile(filePath);
+            }
+            return player;
+        }
+
+        public void close() {
+            if (player != null) {
+                player.close();
+                player = null;
+            }
+        }
     }
 
     private AudioPlayer player() {
         if (musicList.size() == 0) {
             throw new IllegalStateException("y u no hev songs in folder");
         }
-        return musicList.get(pos).player;
+        return musicList.get(pos).player();
     }
 
     /**
      * use this method when after changing to a different player (ie pos++, pos--, or pos = something). Will make sure sliders and volume and such is correct.
      * also cues the current player to 0.
      */
-    private void configurePlayer() {
+    private void configurePlayer(int newPos) {
+        if (newPos != pos) {
+            musicList.get(pos).close();
+            pos = newPos;
+        }
         songtime.setMax(player().length());
         songName.setText(musicList.get(pos).fileName());
         songTable.getSelectionModel().select(new Integer(pos));
