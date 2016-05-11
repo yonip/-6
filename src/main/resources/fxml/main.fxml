@@ -49,27 +49,45 @@
                   </Menu>
               </menus>
             </MenuBar>
-            <SplitPane dividerPositions="0.28595317725752506" VBox.vgrow="ALWAYS">
-               <items>
-                  <AnchorPane minHeight="0.0" minWidth="0.0">
-                     <children>
-                        <TableView fx:id="songTable" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                          <columns>
-                            <TableColumn fx:id="songTitleColumn" editable="false" prefWidth="200.0" text="Title" />
-                            <TableColumn fx:id="songAuthorColumn" editable="false" prefWidth="175.0" text="Author" />
-                              <TableColumn fx:id="songDurationColumn" editable="false" prefWidth="101.0" text="Duration" />
-                              <TableColumn fx:id="songAgeColumn" editable="false" prefWidth="101.0" text="Age" />
-                          </columns>
-                        </TableView>
-                     </children>
-                  </AnchorPane>
-                  <AnchorPane fx:id="canvasHolder">
-                     <children>
-                        <ResizableCanvas height="314.0" width="420.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
-                     </children>
-                  </AnchorPane>
-               </items>
-            </SplitPane>
+            <TabPane tabClosingPolicy="UNAVAILABLE">
+              <tabs>
+                <Tab closable="false" text="Main">
+                     <content>
+                        <SplitPane dividerPositions="0.28595317725752506">
+                           <items>
+                              <AnchorPane minHeight="0.0" minWidth="0.0">
+                                 <children>
+                                    <TableView fx:id="songTable" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                      <columns>
+                                        <TableColumn fx:id="songTitleColumn" editable="false" prefWidth="200.0" text="Title" />
+                                        <TableColumn fx:id="songAuthorColumn" editable="false" prefWidth="175.0" text="Author" />
+                                          <TableColumn fx:id="songDurationColumn" editable="false" prefWidth="101.0" text="Duration" />
+                                          <TableColumn fx:id="songAgeColumn" editable="false" prefWidth="101.0" text="Age" />
+                                      </columns>
+                                    </TableView>
+                                 </children>
+                              </AnchorPane>
+                              <AnchorPane fx:id="canvasHolder">
+                                 <children>
+                                    <ResizableCanvas height="314.0" width="420.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
+                                 </children>
+                              </AnchorPane>
+                           </items>
+                        </SplitPane>
+                     </content>
+                  </Tab>
+                <Tab closable="false" text="Song list" />
+                  <Tab closable="false" text="Visualizers">
+                    <content>
+                      <AnchorPane minHeight="0.0" minWidth="0.0">
+                           <children>
+                              <VBox fx:id="visualizerHolder" />
+                           </children>
+                        </AnchorPane>
+                    </content>
+                  </Tab>
+              </tabs>
+            </TabPane>
             <ToolBar>
                <items>
                   <VBox alignment="BASELINE_CENTER">

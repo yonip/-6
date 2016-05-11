@@ -27,6 +27,7 @@ public class SettingsController{
 	private String directories;
 	ToggleGroup repSetting;
 
+    @SuppressWarnings("unused")
     @FXML
 	public void initialize() {
         directoryChooser = new DirectoryChooser();
@@ -40,6 +41,7 @@ public class SettingsController{
 		System.out.println("ready");
 	}
 
+    @SuppressWarnings("unused")
 	@FXML
     private void add(MouseEvent event) {
         File chosen = directoryChooser.showDialog(musicDirectoriesView.getScene().getWindow());
@@ -48,6 +50,7 @@ public class SettingsController{
         }
     }
 
+    @SuppressWarnings("unused")
     @FXML
     private void remove(MouseEvent event) {
         int index = musicDirectoriesView.getSelectionModel().getSelectedIndex();
