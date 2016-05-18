@@ -107,6 +107,7 @@ public class Controller {
     double polarTheta2=0;
     double dist;
     double left =0;
+    double right;
     double left2 = 0;
     double tempX;
     double tempY;
@@ -224,98 +225,14 @@ public class Controller {
                 gc.setFill(Color.gray(0.2));
                 gc.fillRect(0, height, width * (player().position() / (double) (player().length())), height - 2);
                 gc.beginPath();
-                //gc.fill();
-                //gc.moveTo(0, height/2);
-                /*
-                double polarR = 100;
-                double polarTheta = 0;
-                double polarR2 = 100;
-                double polarTheta2 = 0;
-                double left = 0;
-                double left2 = 0;
-                for (int i = 0; i < player().bufferSize(); i = i + (int) (10 - Math.abs(Math.random() * 8))) {
-                    left = (height / 2 + player().left.get(i) * height / 2);
-                    //gc.lineTo(width * ((double)i)/player().bufferSize(), left);
-                    //polarR=Math.abs(Math.sin(player().position() / 10000000.0)) + (double)left/5.0;
 
-                        //outside radius
-                        polarR = 20*Math.abs(Math.cos(player().position()/1000.0)) + left/2.0;
-                        polarTheta = (double)(i+now/100000000.0)/((double)player().bufferSize())*Math.PI*2;
-                        //gc.lineTo(polarR*Math.cos(polarTheta)+width/2,polarR*Math.sin(polarTheta)+height/2);
-                        //System.out.print(left + " ");
-                        //gc.lineTo(width * ((double)i)/player().bufferSize(), left);
+                beat.detect(player().mix);
 
-                        if (i<player().bufferSize()){
-                            for (int m=80;m<101;m=m+20) {
-                                //y values
-                                left2 = (canvas.getHeight() / 2 + player().left.get((i + m)%player().bufferSize()) * canvas.getHeight() / 2);
-                                left2 = Math.log(left2)+height/2;
+                gc.stroke();
+                fft.forward(player().mix);
 
-                                //converting to polar
-                                polarR2 = 40*(Math.abs(Math.cos(now/100000000000.0)))+left2/2.0;
-                                //polarR2 =  left2 / 5.0;
+                bigCircle(now,gc,height,width);
 
-                                polarTheta2 = (double) (i + m+player().position()/100000.0) / ((double) player().bufferSize()) * Math.PI * 2;
-
-                                //color and drawing the line
-                                gc.setStroke(new Color(Math.abs(Math.cos(player().position()/100000.0)), Math.abs(Math.sin(player().position()/5000000.0)), Math.abs(Math.cos(now/60000000000.0)), 0.2));
-                                gc.strokeLine(polarR * Math.cos(polarTheta) + width / 2, polarR * Math.sin(polarTheta) + height / 2, polarR2 * Math.cos(polarTheta2) + width / 2, polarR2 * Math.sin(polarTheta2) + height / 2);
-                            }
-                        }
-
-                }
-                gc.moveTo(0, height / 2);
-
-
-                    }
-                    double right=0;
-                    for(int i = 0; i < player().bufferSize(); i=i+10)
-                    {
-                        right = height/2 + player().right.get(i) * height/2;
-                        right = right -200;
-                        //right = Math.sqrt(right)+height/2;
-                        //gc.lineTo(width * ((double)i)/player().bufferSize(), right);
-                        gc.strokeLine(width*(double)i/player().bufferSize(),right/2.0+height/2,width*(double)i/player().bufferSize(),height/2-right/2.0);
-
-                    } */
-
-
-                    //bigCircle(now,gc, height, width);
-
-                    beat.detect(player().mix);
-                    //drifting(now,gc,height,width);
-
-
-
-
-
-
-
-                    //Some cool setups:
-                    //right = height/2 + player().right.get(i)*height/2
-                    //inside for loop, right2 = Math.log(right2)+height/2
-
-
-
-
-                    //System.out.println();
-                    //gc.closePath();
-                    gc.stroke();
-                    fft.forward(player().mix);
-                    gc.setFill(Color.AQUAMARINE);
-                    /*
-                    for(int squareX=(int)(width/4.0);squareX<width*3/4;squareX=squareX+30){
-                        for (int squareY=(int)(height/4.0);squareY<height*3/4;squareY=squareY+30){
-                            gc.fillRoundRect(squareX,squareY,15,15,5,5);
-                            if (Math.random()> 0.4 && beat.isSnare()){
-                                gc.setFill(Color.CRIMSON);
-                            }
-                            else{
-                                gc.setFill(Color.AQUAMARINE);
-                            }
-
-                        }
-                    } */
 
 
                     //gc.setStroke(Color.WHITE);
@@ -326,12 +243,12 @@ public class Controller {
                         band = fft.getBand(i);
                         posit = player().position();
                         for (int dots=0;dots<band*tall;dots=dots + 5){
-                            gc.setFill(new Color((double)Math.abs(Math.cos(now/10000000000.0)),Math.abs(Math.sin(band*tall)),Math.abs(Math.cos(i/1000000.0)),1));
+                            gc.setFill(new Color(Math.abs(Math.cos(now/10000000000.0)),Math.abs(Math.sin(band*tall)),Math.abs(Math.cos(i/1000000.0)),1));
                             gc.fillOval((intervalBar+posit/100.0)%width,height/2-dots,2,2);
                             gc.fillOval(width-(intervalBar+posit/100.0)%width,height/2+dots,2,2);
                         }
                         addedFactor=15;
-                        if(Math.abs((intervalBar+posit/100.0)%width-((i+1)*(width/ln)+posit/100.0)%width)<width-5){
+                        if(Math.abs((intervalBar+posit/100.0)%width)-Math.abs(((i+1)*(width/ln)+posit/100.0)%width)<width-10){
                             gc.setStroke(new Color((double)i/ln,Math.abs(Math.cos((double)i/(Math.abs(10-Math.cos(now))))),0.7*Math.abs(Math.cos(i/1000000.0)),1));
                             gc.strokeLine((intervalBar+posit/100.0)%width,height/2 - band*tall,((i+1)*(width/ln)+posit/100.0)%width,height/2-fft.getBand(i+1)*tall);
                             gc.strokeLine(width-(intervalBar+posit/100.0)%width,height/2+band*tall,width-((i+1)*(width/ln)+posit/100.0)%width,height/2+fft.getBand(i+1)*tall);
@@ -634,38 +551,63 @@ public class Controller {
     public void bigCircle(long now,GraphicsContext gc, double height,double width){
 
         //System.out.println(height+" "+width);
+        int sizeM=1000;
 
-        for(int i = 0; i < player().bufferSize(); i=i+(int)(10-Math.abs(Math.random()*8)))
+        for(int i = 0; i < sizeM; i=i+50)
         {
             posit=player().position();
             left = (height/2 + player().left.get(i) * height/2);
+            right = (height/2 + player().right.get(i)*height/2);
             //gc.lineTo(width * ((double)i)/player().bufferSize(), left);
             //polarR=Math.abs(Math.sin(posit / 10000000.0)) + (double)left/5.0;
 
             //outside radius
-            polarR = 20*Math.abs(Math.cos(posit/1000.0)) + left/2.0;
-            polarTheta = (double)(i+now/100000000.0)/((double)player().bufferSize())*Math.PI*2;
+            //polarR = 20*Math.abs(Math.cos(posit/1000.0)) + left/2.0;
+            polarTheta = (double)(i+now/100000000.0)/((double)sizeM)*Math.PI*2;
             //gc.lineTo(polarR*Math.cos(polarTheta)+width/2,polarR*Math.sin(polarTheta)+height/2);
             //System.out.print(left + " ");
             //gc.lineTo(width * ((double)i)/player().bufferSize(), left);
 
+            polarR=100+40*Math.sin(now/10000000000.0);
+            polarR2=100+40*Math.sin(now/10000000000.0);
+            polarTheta2 = (left+now/100000000.0)/(double)sizeM*Math.PI*2;
+
+            gc.setStroke(new Color(Math.abs(Math.cos(polarR2/1000000.0)),0.2,0.7,Math.abs(Math.sin(polarTheta2))));
+            gc.strokeLine(polarR*Math.cos(polarTheta)+width/2,polarR*Math.sin(polarTheta)+height/2,polarR2*Math.cos(polarTheta2)+width/2,polarR2*Math.sin(polarTheta2)+height/2);
+
+            //polarR=20*Math.abs(Math.cos(posit/1000.0))+right/2.0;
+            polarTheta = (i+now/100000000.0)/((double)sizeM)*Math.PI*2+Math.PI;
+
+            polarR=100+40*Math.sin(now/10000000000.0);
+            polarR2=100+40*Math.sin(now/10000000000.0);
+            polarTheta2 = (right+now/100000000.0)/(double)sizeM*Math.PI*2+Math.PI;
+            //polarTheta = i/(double)sizeM*Math.PI*2+Math.PI;
+            //polarTheta2=right/(double)sizeM*Math.PI*2+Math.PI;
+            gc.setStroke(new Color(0.2,0.2,Math.abs(Math.cos(polarR/100000.0)),Math.abs(Math.cos(polarTheta2))));
+            gc.strokeLine(polarR*Math.cos(polarTheta)+width/2,polarR*Math.sin(polarTheta)+height/2,polarR2*Math.cos(polarTheta2)+width/2,polarR2*Math.sin(polarTheta2)+height/2);
+
+            gc.setStroke(Color.GRAY);
             if (i<player().bufferSize()){
                 for (int m=80;m<101;m=m+20) {
                     //y values
-                    left2 = (canvas.getHeight() / 2 + player().left.get((i + m)%player().bufferSize()) * canvas.getHeight() / 2);
-                    left2 = Math.log(left2)+height/2;
+                    //left2 = (canvas.getHeight() / 2 + player().left.get((i + m)%player().bufferSize()) * canvas.getHeight() / 2);
+                    //left2 = Math.log(left2)+height/2;
 
                     //converting to polar
-                    polarR2 = 40*(Math.abs(Math.cos(now/100000000000.0)))+left2/2.0;
+                    //polarR2 = 40*(Math.abs(Math.cos(now/100000000000.0)))+left2/2.0;
                     //polarR2 =  left2 / 5.0;
 
-                    polarTheta2 = (double) (i + m+posit/100000.0) / ((double) player().bufferSize()) * Math.PI * 2;
+                    //polarTheta2 = (double) (i + m+posit/100000.0) / ((double) player().bufferSize()) * Math.PI * 2;
 
                     //color and drawing the line
-                    gc.setStroke(new Color(Math.abs(Math.cos(posit/100000.0)), Math.abs(Math.sin(posit/5000000.0)), Math.abs(Math.cos(now/60000000000.0)), 0.2));
-                    gc.strokeLine(polarR * Math.cos(polarTheta) + width / 2, polarR * Math.sin(polarTheta) + height / 2, polarR2 * Math.cos(polarTheta2) + width / 2, polarR2 * Math.sin(polarTheta2) + height / 2);
+                    //gc.setStroke(new Color(Math.abs(Math.cos(posit/100000.0)), Math.abs(Math.sin(posit/5000000.0)), Math.abs(Math.cos(now/60000000000.0)), 0.2));
+                    //gc.strokeLine(polarR * Math.cos(polarTheta) + width / 2, polarR * Math.sin(polarTheta) + height / 2, polarR2 * Math.cos(polarTheta2) + width / 2, polarR2 * Math.sin(polarTheta2) + height / 2);
+
+
                 }
+
             }
+
 
 
 
@@ -677,7 +619,7 @@ public class Controller {
             right = right -200;
             //right = Math.sqrt(right)+height/2;
             //gc.lineTo(width * ((double)i)/player().bufferSize(), right);
-            gc.strokeLine(width*(double)i/player().bufferSize(),right/2.0+height/2,width*(double)i/player().bufferSize(),height/2-right/2.0);
+            //gc.strokeLine(width*(double)i/player().bufferSize(),right/2.0+height/2,width*(double)i/player().bufferSize(),height/2-right/2.0);
 
         }
 
