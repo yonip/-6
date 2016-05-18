@@ -16,24 +16,29 @@ import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.JavaFXBuilderFactory;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import sample.util.ButtonImage;
-import sample.util.Context;
+import sample.util.*;
+import sample.util.RadioButton;
+import sample.visualizer.CircleVisualizer;
+import sample.visualizer.DriftingVisualizer;
+import sample.visualizer.RegularLineVisualizer;
+import sample.visualizer.Visualizer;
 
 import java.io.*;
 import java.time.Clock;
 import java.util.*;
 
-@SuppressWarnings("unused")
 public class Controller {
     @FXML
     private VBox information;
@@ -77,6 +82,11 @@ public class Controller {
     @FXML
     private TableColumn<Integer, String> songAgeColumn;
 
+    @FXML
+    private VBox visualizerHolder;
+    private ToggleGroup visualizerChoices;
+    private Visualizer defaultVisualizer = new RegularLineVisualizer();
+
     private ButtonImage playImgs;
     private ButtonImage pauseImgs;
     private ButtonImage repeatImgs;
@@ -92,14 +102,9 @@ public class Controller {
     private AnimationTimer timer;
     private long lastRewind;
     private long skipbackTimeout = 250;
-    private ArrayList<Double> circles=null;
-    private ArrayList<Double> circlesNew = null;
-    private ArrayList<Double> speed=null;
-    private ArrayList<Double> disks = null;
 
-    private int amountSkip=10;
     private double tall = 1.4;
-    double addedFactor =0;
+    double addedFactor = 0;
     double posit = 0;
     double polarR = 100;
     double polarTheta=0;
@@ -107,7 +112,6 @@ public class Controller {
     double polarTheta2=0;
     double dist;
     double left =0;
-    double right;
     double left2 = 0;
     double tempX;
     double tempY;
@@ -120,6 +124,7 @@ public class Controller {
      * Called to initialize a controller after its root element has been
      * completely processed.
      */
+    @SuppressWarnings("unused")
     @FXML
     public void initialize() {
         files = new HashMap<>();
@@ -135,9 +140,14 @@ public class Controller {
         playPause.setGraphic(playImgs.getImage());
         skip.setGraphic(skipforwardImgs.getImage());
         rewind.setGraphic(skipbackImgs.getImage());
-        circles=new ArrayList<Double>();
-        circlesNew=new ArrayList<Double>();
-        speed = new ArrayList<Double>();
+
+        visualizerChoices = new ToggleGroup();
+        new RadioButton<>(new CircleVisualizer()).setToggleGroup(visualizerChoices);
+        new RadioButton<>(new DriftingVisualizer()).setToggleGroup(visualizerChoices);
+        new RadioButton<>(new RegularLineVisualizer()).setToggleGroup(visualizerChoices);
+        for (Toggle t : visualizerChoices.getToggles()) {
+            visualizerHolder.getChildren().add((Node)t);
+        }
 
         minim = new Minim(this);
         musicList = FXCollections.observableArrayList();
@@ -181,18 +191,7 @@ public class Controller {
         configurePlayer(pos);
         fft = new FFT(player().bufferSize(), player().sampleRate());
 
-        for (int i=0;i<player().bufferSize();i=i+10){
-            circles.add(Math.random()*canvas.getWidth());
-            circles.add(Math.random()*canvas.getHeight());
-            speed.add(Math.random()*0.5);
-
-        }
-        for (int i=0;i<circles.size();i++){
-
-        }
-        circlesNew.addAll(circles);
-
-        beat = new BeatDetect(player().bufferSize(),player().sampleRate());
+        beat = new BeatDetect(player().bufferSize(), player().sampleRate());
         timer = new AnimationTimer() {
             GraphicsContext gc;
             double width;
@@ -201,6 +200,7 @@ public class Controller {
             double right;
             double band;
             int ln = 100;
+            RadioButton<Visualizer> rb;
 
             @SuppressWarnings("UnusedAssignment")
             @Override
@@ -211,64 +211,52 @@ public class Controller {
                 if (!player().isPlaying() && playing) {
                     play();
                 }
-                if (player().position() >= player().length()-1000) { // cri. i need to figure out why it doesn't get to the end
+                if (player().position() >= player().length() - 1000) { // cri. i need to figure out why it doesn't get to the end
                     Platform.runLater(() -> configurePlayer(pos + 1));
                 }
                 // now to drawing things
                 gc = canvas.getGraphicsContext2D();
                 width = canvas.getWidth();
                 height = canvas.getHeight();
-                gc.setStroke(Color.BLACK);
-                //gc.setFill(Color.gray(1)); ORIGINAL
-                gc.setFill(Color.BLACK);
-                gc.fillRect(0, 0, width, height);
-                gc.setFill(Color.gray(0.2));
-                gc.fillRect(0, height, width * (player().position() / (double) (player().length())), height - 2);
-                gc.beginPath();
-
                 beat.detect(player().mix);
-
-                gc.stroke();
                 fft.forward(player().mix);
+                rb = ((RadioButton<Visualizer>)(visualizerChoices.getSelectedToggle()));
+                if (rb != null) {
+                    rb.get().draw(now, player().position(), player().length(), gc, width, height, player(), fft, beat);
+                } else {
+                    defaultVisualizer.draw(now, player().position(), player().length(), gc, width, height, player(), fft, beat);
+                }
+                /*
+                for (int i = 0; i < ln + 1; i++) {
 
-                bigCircle(now,gc,height,width);
-
-
-
-                    //gc.setStroke(Color.WHITE);
-                    //gc.strokeLine(0,height/2+height*0.4,width,height/2-height*0.4);
-                    for(int i = 0; i < ln+1; i++) {
-
-                        intervalBar = i*(width/ln);
-                        band = fft.getBand(i);
-                        posit = player().position();
-                        for (int dots=0;dots<band*tall;dots=dots + 5){
-                            gc.setFill(new Color(Math.abs(Math.cos(now/10000000000.0)),Math.abs(Math.sin(band*tall)),Math.abs(Math.cos(i/1000000.0)),1));
-                            gc.fillOval((intervalBar+posit/100.0)%width,height/2-dots,2,2);
-                            gc.fillOval(width-(intervalBar+posit/100.0)%width,height/2+dots,2,2);
-                        }
-                        addedFactor=15;
-                        if(Math.abs((intervalBar+posit/100.0)%width)-Math.abs(((i+1)*(width/ln)+posit/100.0)%width)<width-10){
-                            gc.setStroke(new Color((double)i/ln,Math.abs(Math.cos((double)i/(Math.abs(10-Math.cos(now))))),0.7*Math.abs(Math.cos(i/1000000.0)),1));
-                            gc.strokeLine((intervalBar+posit/100.0)%width,height/2 - band*tall,((i+1)*(width/ln)+posit/100.0)%width,height/2-fft.getBand(i+1)*tall);
-                            gc.strokeLine(width-(intervalBar+posit/100.0)%width,height/2+band*tall,width-((i+1)*(width/ln)+posit/100.0)%width,height/2+fft.getBand(i+1)*tall);
-                            if (i==0){
-                                gc.strokeLine(posit/100.0%width,height/2-band*tall,(1+posit/100.0)%width,height/2-fft.getBand(ln)*tall);
-                                gc.strokeLine(width-(posit/100.0)%width,height/2+band*tall,(width-(1+posit/100.0)%width),height/2+fft.getBand(ln)*tall);
-                            }
-                            if(beat.isSnare()){
-                                gc.setStroke(new Color((double)i/ln,Math.abs(Math.cos((double)i/(Math.abs(10-Math.cos(now))))),0.7*Math.abs(Math.cos(i/1000000.0)),0.5));
-                                gc.strokeLine((intervalBar+posit/100.0)%width+addedFactor,height/2 - band*tall-addedFactor,((i+1)*(width/ln)+posit/100.0)%width+addedFactor,height/2-fft.getBand(i+1)*tall-addedFactor);
-                                gc.strokeLine(width-(intervalBar+posit/100.0)%width+addedFactor,height/2+band*tall+addedFactor,width-((i+1)*(width/ln)+posit/100.0)%width+addedFactor,height/2+fft.getBand(i+1)*tall+addedFactor);
-                                if (i==0){
-                                    gc.strokeLine(posit/100.0%width+addedFactor,height/2-band*tall-addedFactor,(1+posit/100.0)%width,height/2-fft.getBand(ln)*tall-addedFactor);
-                                    gc.strokeLine(width-(posit/100.0)%width+addedFactor,height/2+band*tall+addedFactor,(width-(1+posit/100.0)%width),height/2+fft.getBand(ln)*tall+addedFactor);
-                                }
-                            }
-                        }
-
-                        //gc.fillRect(i * (width/ln), 0, (width/ln), band);
+                    intervalBar = i * (width / ln);
+                    band = fft.getBand(i);
+                    posit = player().position();
+                    for (int dots = 0; dots < band * tall; dots = dots + 5) {
+                        gc.setFill(new Color(Math.abs(Math.cos(now / 10000000000.0)), Math.abs(Math.sin(band * tall)), Math.abs(Math.cos(i / 1000000.0)), 1));
+                        gc.fillOval((intervalBar + posit / 100.0) % width, height / 2 - dots, 2, 2);
+                        gc.fillOval(width - (intervalBar + posit / 100.0) % width, height / 2 + dots, 2, 2);
                     }
+                    addedFactor = 15;
+                    if (Math.abs((intervalBar + posit / 100.0) % width - ((i + 1) * (width / ln) + posit / 100.0) % width) < width - 5) {
+                        gc.setStroke(new Color((double) i / ln, Math.abs(Math.cos((double) i / (Math.abs(10 - Math.cos(now))))), 0.7 * Math.abs(Math.cos(i / 1000000.0)), 1));
+                        gc.strokeLine((intervalBar + posit / 100.0) % width, height / 2 - band * tall, ((i + 1) * (width / ln) + posit / 100.0) % width, height / 2 - fft.getBand(i + 1) * tall);
+                        gc.strokeLine(width - (intervalBar + posit / 100.0) % width, height / 2 + band * tall, width - ((i + 1) * (width / ln) + posit / 100.0) % width, height / 2 + fft.getBand(i + 1) * tall);
+                        if (i == 0) {
+                            gc.strokeLine(posit / 100.0 % width, height / 2 - band * tall, (1 + posit / 100.0) % width, height / 2 - fft.getBand(ln) * tall);
+                            gc.strokeLine(width - (posit / 100.0) % width, height / 2 + band * tall, (width - (1 + posit / 100.0) % width), height / 2 + fft.getBand(ln) * tall);
+                        }
+                        if (beat.isSnare()) {
+                            gc.setStroke(new Color((double) i / ln, Math.abs(Math.cos((double) i / (Math.abs(10 - Math.cos(now))))), 0.7 * Math.abs(Math.cos(i / 1000000.0)), 0.5));
+                            gc.strokeLine((intervalBar + posit / 100.0) % width + addedFactor, height / 2 - band * tall - addedFactor, ((i + 1) * (width / ln) + posit / 100.0) % width + addedFactor, height / 2 - fft.getBand(i + 1) * tall - addedFactor);
+                            gc.strokeLine(width - (intervalBar + posit / 100.0) % width + addedFactor, height / 2 + band * tall + addedFactor, width - ((i + 1) * (width / ln) + posit / 100.0) % width + addedFactor, height / 2 + fft.getBand(i + 1) * tall + addedFactor);
+                            if (i == 0) {
+                                gc.strokeLine(posit / 100.0 % width + addedFactor, height / 2 - band * tall - addedFactor, (1 + posit / 100.0) % width, height / 2 - fft.getBand(ln) * tall - addedFactor);
+                                gc.strokeLine(width - (posit / 100.0) % width + addedFactor, height / 2 + band * tall + addedFactor, (width - (1 + posit / 100.0) % width), height / 2 + fft.getBand(ln) * tall + addedFactor);
+                            }
+                        }
+                    }
+                }*/
             }
         };
         songtime.valueChangingProperty().addListener((ov, wasChanging, isChanging) -> {
@@ -298,10 +286,6 @@ public class Controller {
         player().pause();
     }
 
-    private static String timeToText(int time) {
-        return timeToText(time, false);
-    }
-
     private static String timeToText(int time, boolean withMillis) {
         int hrs = time / HOUR;
         int min = (time / MINUTE) % 60;
@@ -322,6 +306,7 @@ public class Controller {
         return t;
     }
 
+    @SuppressWarnings("unused")
     @FXML
     private void playPausePressed(MouseEvent event) {
         pauseImgs.setPressed(true);
@@ -329,6 +314,7 @@ public class Controller {
         playPause(event);
     }
 
+    @SuppressWarnings("unused")
     @FXML
     private void playPause(Event event) {
         if (playing) {
@@ -340,6 +326,7 @@ public class Controller {
         }
     }
 
+    @SuppressWarnings("unused")
     @FXML
     private void playPauseReleased(MouseEvent event) {
         pauseImgs.setPressed(false);
@@ -351,6 +338,7 @@ public class Controller {
         }
     }
 
+    @SuppressWarnings("unused")
     @FXML
     private void rewindPressed(MouseEvent event) {
         skipbackImgs.setPressed(true);
@@ -358,6 +346,7 @@ public class Controller {
         rewind(event);
     }
 
+    @SuppressWarnings("unused")
     @FXML
     private void rewind(Event event) {
         if (pos > 0 && (player().position() == 0 || System.currentTimeMillis() - lastRewind < skipbackTimeout)) {
@@ -368,12 +357,14 @@ public class Controller {
         player().cue(0);
     }
 
+    @SuppressWarnings("unused")
     @FXML
     private void rewindReleased(MouseEvent event) {
         skipbackImgs.setPressed(false);
         rewind.setGraphic(skipbackImgs.getImage());
     }
 
+    @SuppressWarnings("unused")
     @FXML
     private void skipPressed(MouseEvent event) {
         skipforwardImgs.setPressed(true);
@@ -381,18 +372,21 @@ public class Controller {
         skip(event);
     }
 
+    @SuppressWarnings("unused")
     @FXML
     private void skip(Event event) {
         player().pause();
         configurePlayer(pos + 1);
     }
 
+    @SuppressWarnings("unused")
     @FXML
     private void skipReleased(MouseEvent event) {
         skipforwardImgs.setPressed(false);
         skip.setGraphic(skipforwardImgs.getImage());
     }
 
+    @SuppressWarnings("unused")
     @FXML
     private void openSettings(ActionEvent event) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/fxml/settings.fxml"), null, new JavaFXBuilderFactory(), null);
@@ -468,146 +462,41 @@ public class Controller {
         this.player().pause();
     }
 
-    public void regularLine(long now, GraphicsContext gc){
-        double height=canvas.getHeight()/2;
-        double width=canvas.getWidth()/2;
-        double right2=0;
-        double extraX=0;
-        double extraY=0;
-        double extraY2=0;
-        double xValue=0;
-        double xValueNext=0;
-        double zoom=0;
-        double right = 0;
-        for(int i = 0; i < player().bufferSize()-80; i++)
-        {
-            posit = player().position();
-            int forLoop = (int)(80*Math.abs(Math.sin(posit/10000.0)));
-            right = height/2 + player().right.get(i) * height/2;
-            //right = right -200;
-            for (int m=forLoop;m<forLoop+2;m=m+20){
-                right2 = height/2 + player().right.get(i+m) * height/2;
-                xValue = canvas.getWidth()*((double)i)/player().bufferSize();
-                xValueNext = canvas.getWidth()* ((double)(i+m))/player().bufferSize();
-                right2 = Math.log(right2+30*Math.random())+height/2;
-                //gc.setStroke(new Color(0.25,0.4,0.72,1-m/100.0));
-                gc.setStroke(new Color(Math.abs((double)Math.sin(posit/40000.0)),Math.abs(Math.sin(0.4-(posit/20000.0))),0.7,0.5));
-
-                zoom = 3*Math.sin(posit/10000.0);
-                gc.strokeLine((xValue-width/2)*zoom+width/2,(right-height/2.0)*zoom+height/2, (xValueNext-width/2)*zoom+width/2,(right2-height/2)*zoom+height/2);
-            }
-        }
-    }
-
-    public void drifting(long now, GraphicsContext gc, double height, double width){
-        Color circleColor=null;
-        amountSkip=10;
-        beat.detect(player().mix);
-        double left;
-        double dist;
-        double tempX;
-        double tempY;
-        for(int i = 0; i < player().bufferSize(); i=i+amountSkip){
-            posit=player().position();
-            left = (height/2 + player().left.get(i) * height/2);
-            left = left/(Math.abs(29-2*Math.sin(posit/10000000.0)));
-            circleColor = new Color(Math.abs(circles.get(i/amountSkip)/(width+amountSkip+1.0)),Math.abs(Math.sin(now/100000000000.0)),Math.abs(circles.get(i/amountSkip+1)/(height+amountSkip+100.0)),Math.abs(Math.cos(posit/1000000.0))/2.0);
-            gc.setFill(circleColor);
-            gc.setStroke(circleColor);
-            dist=Math.sqrt(Math.pow(circlesNew.get(i/amountSkip)-width/2,2)+Math.pow(circlesNew.get(i/amountSkip+1)-height/2,2));
-            tempX=(circles.get(i/amountSkip)-left/2.0+speed.get(i/amountSkip)*posit/10.0);
-            tempY=(circles.get(i/amountSkip+1)-left/2.0+posit/1000.0);
-            //tempX=circles.get(i/amountSkip);
-            //tempY=circles.get(i/amountSkip+1);
-
-            if(beat.isSnare()==true){
-
-                if(tempX<width/2){circlesNew.set(i/amountSkip,(tempX-dist*(tempX-width/2)/5000000000.0)%width);}
-                else{circlesNew.set(i/amountSkip,(tempX+dist*(tempX-width/2)/5000000000.0)%width);}
-                circlesNew.set(i/amountSkip+1,(tempY-dist*(tempY-height/2)/5000000000.0)%(height));
-            }
-            else{
-                circlesNew.set(i/amountSkip,tempX%width);
-                circlesNew.set(i/amountSkip+1,tempY%(height));
-            }
-            gc.fillOval(circlesNew.get(i/amountSkip),circlesNew.get(i/amountSkip+1),6,6);
-
-            for (int j=0;j<circlesNew.size();j=j+2){
-                if (Math.sqrt(Math.pow(circlesNew.get(i/amountSkip)-circlesNew.get(j),2)+Math.pow(circlesNew.get(i/amountSkip+1)-circlesNew.get(j+1),2))<40){
-                    gc.strokeLine(circlesNew.get(i/amountSkip)+left/2.0,circlesNew.get(i/amountSkip+1)+left/2.0,circlesNew.get(j)+left/2.0,circlesNew.get(j+1)+left/2.0);
-                }
-            }
-
-
-            //gc.fillRect((circleLocations.get(i/amountSkip)-left/2.0+speed.get(i/amountSkip)*now/10000000.0)%width,(circleLocations.get(i/amountSkip+1)-left/2.0+now/1000000000000000.0)%height,left,left);
-            //gc.setStroke(circles);
-            //polarR = 20*Math.abs(Math.cos(player().position()/1000.0)) + left/2.0;
-            //polarTheta = (double)(i+now/100000000.0)/((double)player().bufferSize())*Math.PI*2;
-            //gc.lineTo(polarR*Math.cos(polarTheta)+width/2,polarR*Math.sin(polarTheta)+height);
-            //System.out.print(left + " ");
-            //gc.lineTo(width * ((double)i)/player().bufferSize(), left);
-        }
-    }
     public void bigCircle(long now,GraphicsContext gc, double height,double width){
 
         //System.out.println(height+" "+width);
-        int sizeM=1000;
 
-        for(int i = 0; i < sizeM; i=i+50)
+        for(int i = 0; i < player().bufferSize(); i=i+(int)(10-Math.abs(Math.random()*8)))
         {
             posit=player().position();
             left = (height/2 + player().left.get(i) * height/2);
-            right = (height/2 + player().right.get(i)*height/2);
             //gc.lineTo(width * ((double)i)/player().bufferSize(), left);
             //polarR=Math.abs(Math.sin(posit / 10000000.0)) + (double)left/5.0;
 
             //outside radius
-            //polarR = 20*Math.abs(Math.cos(posit/1000.0)) + left/2.0;
-            polarTheta = (double)(i+now/100000000.0)/((double)sizeM)*Math.PI*2;
+            polarR = 20*Math.abs(Math.cos(posit/1000.0)) + left/2.0;
+            polarTheta = (double)(i+now/100000000.0)/((double)player().bufferSize())*Math.PI*2;
             //gc.lineTo(polarR*Math.cos(polarTheta)+width/2,polarR*Math.sin(polarTheta)+height/2);
             //System.out.print(left + " ");
             //gc.lineTo(width * ((double)i)/player().bufferSize(), left);
 
-            polarR=100+40*Math.sin(now/10000000000.0);
-            polarR2=100+40*Math.sin(now/10000000000.0);
-            polarTheta2 = (left+now/100000000.0)/(double)sizeM*Math.PI*2;
-
-            gc.setStroke(new Color(Math.abs(Math.cos(polarR2/1000000.0)),0.2,0.7,Math.abs(Math.sin(polarTheta2))));
-            gc.strokeLine(polarR*Math.cos(polarTheta)+width/2,polarR*Math.sin(polarTheta)+height/2,polarR2*Math.cos(polarTheta2)+width/2,polarR2*Math.sin(polarTheta2)+height/2);
-
-            //polarR=20*Math.abs(Math.cos(posit/1000.0))+right/2.0;
-            polarTheta = (i+now/100000000.0)/((double)sizeM)*Math.PI*2+Math.PI;
-
-            polarR=100+40*Math.sin(now/10000000000.0);
-            polarR2=100+40*Math.sin(now/10000000000.0);
-            polarTheta2 = (right+now/100000000.0)/(double)sizeM*Math.PI*2+Math.PI;
-            //polarTheta = i/(double)sizeM*Math.PI*2+Math.PI;
-            //polarTheta2=right/(double)sizeM*Math.PI*2+Math.PI;
-            gc.setStroke(new Color(0.2,0.2,Math.abs(Math.cos(polarR/100000.0)),Math.abs(Math.cos(polarTheta2))));
-            gc.strokeLine(polarR*Math.cos(polarTheta)+width/2,polarR*Math.sin(polarTheta)+height/2,polarR2*Math.cos(polarTheta2)+width/2,polarR2*Math.sin(polarTheta2)+height/2);
-
-            gc.setStroke(Color.GRAY);
             if (i<player().bufferSize()){
                 for (int m=80;m<101;m=m+20) {
                     //y values
-                    //left2 = (canvas.getHeight() / 2 + player().left.get((i + m)%player().bufferSize()) * canvas.getHeight() / 2);
-                    //left2 = Math.log(left2)+height/2;
+                    left2 = (canvas.getHeight() / 2 + player().left.get((i + m)%player().bufferSize()) * canvas.getHeight() / 2);
+                    left2 = Math.log(left2)+height/2;
 
                     //converting to polar
-                    //polarR2 = 40*(Math.abs(Math.cos(now/100000000000.0)))+left2/2.0;
+                    polarR2 = 40*(Math.abs(Math.cos(now/100000000000.0)))+left2/2.0;
                     //polarR2 =  left2 / 5.0;
 
-                    //polarTheta2 = (double) (i + m+posit/100000.0) / ((double) player().bufferSize()) * Math.PI * 2;
+                    polarTheta2 = (double) (i + m+posit/100000.0) / ((double) player().bufferSize()) * Math.PI * 2;
 
                     //color and drawing the line
-                    //gc.setStroke(new Color(Math.abs(Math.cos(posit/100000.0)), Math.abs(Math.sin(posit/5000000.0)), Math.abs(Math.cos(now/60000000000.0)), 0.2));
-                    //gc.strokeLine(polarR * Math.cos(polarTheta) + width / 2, polarR * Math.sin(polarTheta) + height / 2, polarR2 * Math.cos(polarTheta2) + width / 2, polarR2 * Math.sin(polarTheta2) + height / 2);
-
-
+                    gc.setStroke(new Color(Math.abs(Math.cos(posit/100000.0)), Math.abs(Math.sin(posit/5000000.0)), Math.abs(Math.cos(now/60000000000.0)), 0.2));
+                    gc.strokeLine(polarR * Math.cos(polarTheta) + width / 2, polarR * Math.sin(polarTheta) + height / 2, polarR2 * Math.cos(polarTheta2) + width / 2, polarR2 * Math.sin(polarTheta2) + height / 2);
                 }
-
             }
-
 
 
 
@@ -619,7 +508,7 @@ public class Controller {
             right = right -200;
             //right = Math.sqrt(right)+height/2;
             //gc.lineTo(width * ((double)i)/player().bufferSize(), right);
-            //gc.strokeLine(width*(double)i/player().bufferSize(),right/2.0+height/2,width*(double)i/player().bufferSize(),height/2-right/2.0);
+            gc.strokeLine(width*(double)i/player().bufferSize(),right/2.0+height/2,width*(double)i/player().bufferSize(),height/2-right/2.0);
 
         }
 
